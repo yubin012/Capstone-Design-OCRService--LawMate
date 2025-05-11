@@ -49,7 +49,7 @@ npm start
 PDF 및 스캔 이미지 대응 OCR 정밀도 향상
 
 👩‍💻 개발자
-윤유빈 (Yubin Park) – Backend & AI Engineer
+박유빈 (Yubin Park) – Backend & AI Engineer
 
 문의: 
 
