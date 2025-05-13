@@ -1,0 +1,226 @@
+✅ LawMate 1단계 프론트엔드 개발 환경 설정 완성 가이드
+
+
+// 미 로그인 상태에서 챗봇 분석 창 접근 
+//  /routes/config.ts 에서 TF 변경
+
+
+
+
+📦 1. 필수 설치 항목 (OS 공통)
+
+🛠️ Node.js 설치
+
+https://nodejs.org 에서 LTS 버전 다운로드
+
+설치 확인:
+
+node -v
+npm -v  
+
+
+
+💻 VSCode 설치
+
+https://code.visualstudio.com 최신 버전 다운로드
+
+🔌 VSCode 확장 프로그램
+
+아래 확장자 필수 설치 (검색해서 설치)
+
+ESLint
+
+Prettier
+
+Tailwind CSS IntelliSense
+
+React Developer Tools
+
+Path Intellisense (자동 경로 인식)
+
+GitLens (선택)
+
+
+
+📁 2. 프로젝트 생성 및 기본 템플릿 세팅
+
+# 프로젝트 생성
+npm create vite@latest lawmate-frontend -- --template react-ts
+cd lawmate-frontend
+
+# 패키지 설치
+npm install
+
+
+
+🎨 3. Tailwind CSS 초기 세팅  // 3. 버전으로 변경
+
+npm install -D tailwindcss@3 postcss autoprefixer
+npx tailwindcss init -p
+
+tailwind.config.js 수정:
+
+module.exports = {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: { extend: {} },
+  plugins: [],
+};
+
+
+src/index.css 수정:
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+src/main.tsx에 CSS import 추가:
+
+import './index.css';
+
+
+
+⚙️ 4. 필수 라이브러리 설치
+
+npm install \
+  framer-motion \
+  react-router-dom \
+  axios @tanstack/react-query \
+  react-hook-form yup @hookform/resolvers \
+  react-toastify \
+  recharts \
+  react-dropzone \
+  html2pdf.js \ 
+  daum-postcode \
+  react-markdown ???
+  
+
+
+🧹 5. ESLint + Prettier + Husky 설정 (코드 정리 자동화)
+
+npm install -D \
+  eslint prettier eslint-config-prettier eslint-plugin-prettier \
+  @typescript-eslint/parser @typescript-eslint/eslint-plugin \
+  eslint-plugin-react eslint-plugin-react-hooks eslint-plugin-jsx-a11y eslint-plugin-import \
+  husky lint-staged
+
+
+.eslintrc.js 설정:
+
+module.exports = {
+  env: { browser: true, es2021: true },
+  parser: '@typescript-eslint/parser',
+  extends: [
+    'plugin:react/recommended',
+    'plugin:@typescript-eslint/recommended',
+    'prettier'
+  ],
+  parserOptions: {
+    ecmaFeatures: { jsx: true },
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+  },
+  plugins: ['react', '@typescript-eslint', 'prettier'],
+  rules: {
+    'prettier/prettier': 'error',
+    'react/react-in-jsx-scope': 'off',
+  },
+  settings: { react: { version: 'detect' } },
+};
+
+
+.prettierrc 설정:
+
+{
+  "semi": true,
+  "singleQuote": true,
+  "printWidth": 80,
+  "trailingComma": "es5"
+}
+
+
+Husky 설정:
+
+npx husky install
+npx husky add .husky/pre-commit "npx lint-staged"
+
+
+package.json에 추가:
+
+"husky": {
+  "hooks": {
+    "pre-commit": "lint-staged"
+  }
+},
+"lint-staged": {
+  "*.{js,jsx,ts,tsx}": [
+    "eslint --fix",
+    "prettier --write"
+  ]
+}
+
+
+
+🧭 6. 경로 alias 설정 (절대경로 사용)
+
+vite.config.ts 수정:
+
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: [
+      { find: '@', replacement: path.resolve(__dirname, 'src') },
+      { find: '@components', replacement: path.resolve(__dirname, 'src/components') },
+      { find: '@features', replacement: path.resolve(__dirname, 'src/features') },
+      { find: '@hooks', replacement: path.resolve(__dirname, 'src/hooks') },
+      { find: '@utils', replacement: path.resolve(__dirname, 'src/utils') },
+      { find: '@api', replacement: path.resolve(__dirname, 'src/api') },
+      { find: '@assets', replacement: path.resolve(__dirname, 'src/assets') },
+    ],
+  },
+});
+
+
+tsconfig.json 설정:
+
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@features/*": ["src/features/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@utils/*": ["src/utils/*"],
+      "@api/*": ["src/api/*"],
+      "@assets/*": ["src/assets/*"]
+    },
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "useDefineForClassFields": true,
+    "composite": true
+  },
+  "include": ["src"]
+}
+
+
+
+🚀 7. 실행
+
+npm run dev
+
+브라우저에서 http://localhost:5173 확인.
