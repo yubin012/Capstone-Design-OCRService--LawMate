@@ -19,6 +19,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
 
+    // Authorization 헤더에서 Bearer <token> 추출
     public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
         this.tokenProvider = tokenProvider;
     }
@@ -30,12 +31,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String bearer = request.getHeader("Authorization");
         if (bearer != null && bearer.startsWith("Bearer ")) {
             String token = bearer.substring(7);
-            if (tokenProvider.validateToken(token)) {
-                String email = tokenProvider.getEmail(token);
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(email,
+            if (tokenProvider.validateToken(token)) { // token 검증 : 성공시 usernamePasswordAuthticationToken 생성 후
+                String userId = tokenProvider.getUserId(token);
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId,
                         null, Collections.emptyList());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(authentication); // SecurityContextHolder 에 저장
             }
         }
         filterChain.doFilter(request, response);

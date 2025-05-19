@@ -28,12 +28,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf().disable()
+                .cors() // CORS 설정
+                .and()
+                .csrf().disable()
                 .exceptionHandling().authenticationEntryPoint(entryPoint)
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeHttpRequests()
-                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/auth/**", // 서버에서는 auth 는 인증없이 접근할 수 있음 그러나 스웨거 UI 자체는 Spring Secuirty 와 별개로 OpenAPI
+                                             // 스팩에 따라 작동하기 때문에 컨트롤러에서 따로 설정을 해주어야함함
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/swagger-ui.html")
+                .permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),

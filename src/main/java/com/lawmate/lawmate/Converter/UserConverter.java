@@ -5,7 +5,7 @@ import com.lawmate.lawmate.DTO.UserRequestDto;
 import org.springframework.stereotype.Component;
 
 // DTO 객체를 엔티티 객체로 변환하는 역할을함.
-// 클라이언특 보낸 회원가입 요청 데이터(UserRequestDto) 를 DB 에 저장하기 위해
+// 클라이언트가 보낸 회원가입 요청 데이터(UserRequestDto) 를 DB 에 저장하기 위해
 // User 엔티티 객체로 변환해야함.
 
 // 이 클래스는 서비스에서 호출되어 사용됨..
