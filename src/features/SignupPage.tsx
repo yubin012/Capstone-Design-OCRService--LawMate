@@ -1,4 +1,4 @@
-// ✅ SignupPage.tsx (생년월일 달력 유지 + 이메일 인증 + 주소 검색 닫기 + 상세주소)
+// ✅ SignupPage.tsx (이메일 인증 제거 버전)
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -9,10 +9,6 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [isEmailSent, setIsEmailSent] = useState(false);
-  const [emailCode, setEmailCode] = useState('');
-  const [inputCode, setInputCode] = useState('');
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [detailAddress, setDetailAddress] = useState('');
@@ -52,26 +48,6 @@ const SignupPage = () => {
     setRequiredAgreed(agreed);
   }, [agreementsChecked]);
 
-  const handleSendVerification = async () => {
-    try {
-      const res = await axios.post('/api/send-code', { email });
-      setIsEmailSent(true);
-      setEmailCode(res.data.code); // 실제로는 서버에서 검증해야 함
-      alert('인증 코드가 전송되었습니다. 메일함을 확인하세요.');
-    } catch {
-      alert('인증 코드 전송 실패');
-    }
-  };
-
-  const handleVerifyCode = () => {
-    if (inputCode === emailCode) {
-      setIsEmailVerified(true);
-      alert('이메일 인증 성공');
-    } else {
-      alert('인증 코드가 일치하지 않습니다.');
-    }
-  };
-
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
@@ -90,10 +66,6 @@ const SignupPage = () => {
     }
     if (emailExists) {
       setError('이미 등록된 이메일입니다.');
-      return;
-    }
-    if (!isEmailVerified) {
-      setError('이메일 인증을 완료해주세요.');
       return;
     }
     if (!requiredAgreed) {
@@ -142,67 +114,38 @@ const SignupPage = () => {
 
         <div>
           <label className="text-black text-sm">이메일</label>
-          <div className="flex gap-2">
-            <input
-              type="email"
-              placeholder="example@gmail.com"
-              className="border p-2 rounded w-full"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            {!isEmailVerified && (
-              <button
-                type="button"
-                className="bg-gray-400 text-white px-3 py-2 rounded whitespace-nowrap"
-                onClick={handleSendVerification}
-              >
-                인증코드 발송
-              </button>
-            )}
-          </div>
-
-          {!isEmailVerified && isEmailSent && (
-            <div className="flex gap-2 mt-2">
-              <input
-                type="text"
-                placeholder="인증 코드 입력"
-                className="border p-2 rounded w-full"
-                value={inputCode}
-                onChange={(e) => setInputCode(e.target.value)}
-              />
-              <button
-                type="button"
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-                onClick={handleVerifyCode}
-              >
-                확인
-              </button>
-            </div>
-          )}
+          <input
+            type="email"
+            placeholder="example@gmail.com"
+            className="border p-2 rounded w-full"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
           {emailExists && (
             <p className="text-red-500 text-sm">이미 사용 중인 이메일입니다.</p>
           )}
         </div>
-
 
         <div>
           <label className="text-black text-sm">전화번호</label>
           <input type="tel" placeholder="휴대폰 번호 입력 ('-' 제외 11자리)" className="border p-2 rounded w-full" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
 
-
-        <div>
-          <label className="text-black text-sm">주소</label>
-          <input type="text" placeholder="주소 검색" className="border p-2 rounded w-full cursor-pointer bg-white" value={address} onClick={() => setIsPostcodeOpen(true)} readOnly />
-          {isPostcodeOpen && (
-            <div className="relative z-50 mt-2 w-full bg-white border shadow-md">
-              <button type="button" className="absolute top-1 right-2 text-lg" onClick={() => setIsPostcodeOpen(false)}>✕</button>
-              <DaumPostcode onComplete={handleAddressComplete} autoClose style={{ width: '100%', height: '400px' }} />
-            </div>
-          )}
-          <input type="text" placeholder="Ex: 101동 202호" className="border p-2 rounded w-full mt-1" value={detailAddress} onChange={(e) => setDetailAddress(e.target.value)} />
-        </div>
-
+        <input
+          type="text"
+          placeholder="주소 검색"
+          className="border p-2 rounded w-full cursor-pointer bg-white"
+          value={address}
+          onClick={() => setIsPostcodeOpen(true)}
+          readOnly
+        />
+        <input
+          type="text"
+          placeholder="Ex: 101동 202호"
+          className="border p-2 rounded w-full mt-1"
+          value={detailAddress}
+          onChange={(e) => setDetailAddress(e.target.value)}
+        />
 
         <div>
           <label className="text-black text-sm">생년월일</label>
@@ -220,7 +163,6 @@ const SignupPage = () => {
             )}
           </div>
         </div>
-
 
         <div>
           <label className="text-black text-sm">성별</label>
@@ -247,6 +189,34 @@ const SignupPage = () => {
         {error && <div className="text-red-500 text-sm">{error}</div>}
         <button type="submit" className="bg-green-600 text-white py-2 rounded hover:bg-green-700">회원가입</button>
       </form>
+
+      {isPostcodeOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+          onClick={() => setIsPostcodeOpen(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg w-[90%] max-w-xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-end p-2">
+              <button
+                type="button"
+                onClick={() => setIsPostcodeOpen(false)}
+                className="text-gray-500 hover:text-red-500 text-xl"
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </div>
+            <DaumPostcode
+              onComplete={handleAddressComplete}
+              autoClose
+              style={{ width: '100%', height: '400px' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,3 @@
-// src/api/user.ts
-
 import axios from 'axios';
 import { getToken } from '@/utils/auth';
 
@@ -8,6 +6,7 @@ export interface UserInfo {
   name: string;
   email: string;
   joinedAt: string;
+  downloadCount?: number; // ✅ 총 다운로드 횟수 필드 추가 (선택적)
 }
 
 export const getUserInfo = async (): Promise<UserInfo> => {
