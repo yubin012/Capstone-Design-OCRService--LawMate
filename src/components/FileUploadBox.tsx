@@ -15,8 +15,8 @@ const FileUploadBox: React.FC<Props> = ({ onFileSelected }) => {
   const { getRootProps, getInputProps, open, isDragActive } = useDropzone({
     onDrop,
     multiple: false,
-    noClick: true,
-    noKeyboard: true,
+    noClick: true,      // input 자체 클릭 방지
+    noKeyboard: true,   // 키보드 접근 방지
     accept: {
       'application/pdf': ['.pdf'],
       'application/msword': ['.doc'],
@@ -33,7 +33,13 @@ const FileUploadBox: React.FC<Props> = ({ onFileSelected }) => {
           : 'border-gray-400 bg-white text-gray-700 hover:border-blue-500'
       }`}
     >
-      <input {...getInputProps()} />
+      {/* 완전히 숨겨진 input - 클릭 차단 */}
+      <input
+        {...getInputProps()}
+        style={{ display: 'none' }}
+        onClick={(e) => e.stopPropagation()}
+      />
+
       {isDragActive ? (
         <p className="text-lg font-semibold">여기에 파일을 놓아 업로드하세요 📂</p>
       ) : (
@@ -41,7 +47,10 @@ const FileUploadBox: React.FC<Props> = ({ onFileSelected }) => {
           <p className="mb-2">이 영역에 파일을 드래그하거나,</p>
           <button
             type="button"
-            onClick={open} // ✅ Dropzone에서 제공하는 open 함수 사용
+            onClick={(e) => {
+              e.stopPropagation(); // 중첩 방지
+              open(); // dropzone의 open()만 실행
+            }}
             className="px-4 py-2 border rounded bg-white hover:bg-gray-50"
           >
             파일을 선택하세요

@@ -16,7 +16,7 @@ export const getUploadHistory = async (): Promise<UploadHistoryItem[]> => {
   return res.data;
 };
 
-// 📤 신규: 업로드 요청 함수 (현재는 사용 안하지만 예비용)
+// 📤 신규: 업로드 요청 함수 (사용안함 - 예비용)
 export const uploadDocument = async (file: File) => {
   const formData = new FormData();
   formData.append('file', file);

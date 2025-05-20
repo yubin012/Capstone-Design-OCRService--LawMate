@@ -5,7 +5,8 @@ import Spinner from '@/components/Spinner';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import BookmarkList, { BookmarkItem } from '@/components/BookmarkList';
-import ChatLogList, { ChatLogItem } from '@/components/ChatLogList'; // ✅ 추가
+import ChatLogList, { ChatLogItem } from '@/components/ChatLogList';
+import FileDownloader from '@/components/FileDownloader';
 
 interface Upload {
   id: string;
@@ -13,11 +14,19 @@ interface Upload {
   uploadedAt: string;
 }
 
+interface SavedReport {
+  id: string;
+  title: string;
+  updatedAt: string;
+  downloadUrl: string;
+}
+
 const MyPage: React.FC = () => {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [uploadHistory, setUploadHistory] = useState<Upload[]>([]);
+  const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
-  const [chatLogs, setChatLogs] = useState<ChatLogItem[]>([]); // ✅ 추가
+  const [chatLogs, setChatLogs] = useState<ChatLogItem[]>([]);
   const [error, setError] = useState('');
   const [password, setPassword] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -31,14 +40,16 @@ const MyPage: React.FC = () => {
         const info = await getUserInfo();
         setUser(info);
 
-        const [uploadRes, bookmarkRes, chatLogRes] = await Promise.all([
+        const [uploadRes, bookmarkRes, chatLogRes, savedReportRes] = await Promise.all([
           axios.get('/api/uploads'),
           axios.get('/api/bookmarks'),
-          axios.get('/api/chat-logs'), // ✅ 추가
+          axios.get('/api/chat-logs'),
+          axios.get('/api/reports/mine'),
         ]);
         setUploadHistory(uploadRes.data);
         setBookmarks(bookmarkRes.data);
         setChatLogs(chatLogRes.data);
+        setSavedReports(savedReportRes.data);
       } catch (err) {
         console.error(err);
         setError('사용자 정보를 불러오는 데 실패했습니다.');
@@ -99,9 +110,7 @@ const MyPage: React.FC = () => {
             </div>
             <div className="bg-gray-100 p-4 rounded text-center">
               <p className="text-lg font-semibold">
-                {uploadHistory[0]
-                  ? new Date(uploadHistory[0].uploadedAt).toLocaleDateString('ko-KR')
-                  : '-'}
+                {uploadHistory[0] ? new Date(uploadHistory[0].uploadedAt).toLocaleDateString('ko-KR') : '-'}
               </p>
               <p className="text-sm text-gray-600">최근 활동일</p>
             </div>
@@ -127,6 +136,33 @@ const MyPage: React.FC = () => {
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* ✅ 저장된 수정 리포트 */}
+          <div className="mt-10">
+            <h3 className="text-lg font-semibold mb-3">📝 수정한 리포트</h3>
+            {savedReports.length === 0 ? (
+              <p className="text-sm text-gray-500">저장된 수정 리포트가 없습니다.</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {savedReports.map((report) => (
+                  <li key={report.id} className="flex justify-between items-center border p-3 rounded-md">
+                    <div>
+                      <button
+                        onClick={() => navigate(`/result?id=${report.id}`)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        📄 {report.title}
+                      </button>
+                      <p className="text-xs text-gray-500 mt-1">
+                        수정일: {new Date(report.updatedAt).toLocaleString('ko-KR')}
+                      </p>
+                    </div>
+                    <FileDownloader fileUrl={report.downloadUrl} filename={report.title + '.pdf'} label="PDF 저장" />
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 

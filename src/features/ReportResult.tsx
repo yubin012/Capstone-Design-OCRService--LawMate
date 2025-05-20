@@ -1,8 +1,7 @@
-// ✅ ReportResult.tsx - 분석 결과 페이지 (기본 + 리스크 요약 + 강조 표시)
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
-import { getReportById } from '@/api/report';
+import { getReportById, AnalyzedClause, saveRevisedClauses } from '@/api/download';
 import { useLoader } from '@/contexts/LoaderContext';
 import Spinner from '@/components/Spinner';
 
@@ -13,15 +12,17 @@ const ReportResult: React.FC = () => {
   const [content, setContent] = useState('');
   const [summary, setSummary] = useState('');
   const [risks, setRisks] = useState<string[]>([]);
+  const [clauses, setClauses] = useState<AnalyzedClause[]>([]);
   const [error, setError] = useState('');
   const [showDetails, setShowDetails] = useState(true);
+  const [saving, setSaving] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const id = params.get('id');
+  const params = new URLSearchParams(location.search);
+  const reportId = params.get('id');
 
-    if (!id) {
+  useEffect(() => {
+    if (!reportId) {
       navigate('/upload');
       return;
     }
@@ -29,16 +30,15 @@ const ReportResult: React.FC = () => {
     const fetchReport = async () => {
       try {
         showLoader();
-        const result = await getReportById(id);
+        const result = await getReportById(reportId);
         if (!result) {
           setError('결과가 존재하지 않습니다.');
           return;
         }
-
-        // 예시 파싱 로직 (응답 포맷에 따라 조정 필요)
         setSummary(result.summary || '요약 없음');
         setRisks(result.risks || []);
-        setContent(result.fullText || result.text || '');
+        setContent(result.fullText || '');
+        setClauses(result.clauses || []);
       } catch (err) {
         console.error(err);
         setError('분석 결과를 불러오는 데 실패했습니다.');
@@ -48,7 +48,7 @@ const ReportResult: React.FC = () => {
     };
 
     fetchReport();
-  }, [location.search, navigate, showLoader, hideLoader]);
+  }, [reportId, navigate, showLoader, hideLoader]);
 
   const handleDownloadPDF = () => {
     const element = document.getElementById('pdf-content');
@@ -81,6 +81,30 @@ const ReportResult: React.FC = () => {
       highlighted = highlighted.replace(regex, `<mark data-risk="${risk}" class="bg-red-100 text-red-700 px-1 rounded">$1</mark>`);
     });
     return highlighted;
+  };
+
+  const handleClauseChange = (idx: number, revisedText: string) => {
+    const updated = [...clauses];
+    updated[idx] = { ...updated[idx], revised: revisedText };
+    setClauses(updated);
+  };
+
+  const handleSave = async () => {
+    if (!reportId) return;
+    setSaving(true);
+    try {
+      const updates = clauses
+        .filter((c) => c.revised && c.revised !== c.original)
+        .map((c) => ({ id: c.id, revised: c.revised! }));
+
+      await saveRevisedClauses(reportId, updates);
+      alert('수정된 조항이 저장되었습니다.');
+    } catch (err) {
+      console.error(err);
+      alert('저장에 실패했습니다.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -133,13 +157,58 @@ const ReportResult: React.FC = () => {
           )}
 
           <section>
-            <h3 className="text-lg font-semibold mb-2">📃 원문 보기</h3>
-            <div
-              id="pdf-content"
-              ref={contentRef}
-              className="bg-gray-50 p-4 rounded text-sm whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{ __html: highlightRisks(content) }}
-            />
+            <h3 className="text-lg font-semibold mb-2">📃 문서 원문 + 분석</h3>
+            <div id="pdf-content" ref={contentRef} className="space-y-4">
+              {clauses.length > 0 ? (
+                clauses.map((clause, idx) => (
+                  <div key={idx} className="bg-white border rounded-md p-4 text-sm shadow-sm">
+                    <p
+                      className="mb-1 text-gray-700 whitespace-pre-wrap"
+                      dangerouslySetInnerHTML={{ __html: `<strong>원문:</strong> ${highlightRisks(clause.original)}` }}
+                    />
+                    <div className="mt-2">
+                      <label className="block text-xs text-gray-500 mb-1">✏️ 보정 (수정 가능)</label>
+                      <textarea
+                        value={clause.revised || ''}
+                        onChange={(e) => handleClauseChange(idx, e.target.value)}
+                        className="w-full p-2 border rounded text-sm resize-y"
+                        rows={2}
+                      />
+                    </div>
+                    {clause.risk && (
+                      <p className="mb-1 mt-2 text-red-600 whitespace-pre-wrap"><strong>위험도:</strong> {clause.risk}</p>
+                    )}
+                    {clause.relatedCases && clause.relatedCases.length > 0 && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        <strong>관련 판례:</strong>
+                        <ul className="list-disc list-inside">
+                          {clause.relatedCases.map((caseItem, caseIdx) => (
+                            <li key={caseIdx}>{caseItem}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div
+                  className="bg-gray-50 p-4 rounded text-sm whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{ __html: highlightRisks(content) }}
+                />
+              )}
+            </div>
+
+            {clauses.length > 0 && (
+              <div className="text-right mt-4">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className={`px-5 py-2 rounded text-white text-sm ${saving ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'}`}
+                >
+                  {saving ? '저장 중...' : '수정 내용 저장하기'}
+                </button>
+              </div>
+            )}
           </section>
         </>
       ) : (

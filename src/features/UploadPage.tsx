@@ -1,31 +1,24 @@
-// src/features/UploadPage.tsx
-import React, { useState, useRef } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { FileRejection } from 'react-dropzone';
+import React, { useState } from 'react';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Spinner from '@/components/Spinner'; // ✅ 로딩 인디케이터 컴포넌트
-import { toast } from 'react-toastify'; // ✅ 추가
+import Spinner from '@/components/Spinner';
+import { toast } from 'react-toastify';
 
 const UploadPage: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
-
-
 
   const onDrop = (acceptedFiles: File[], fileRejections: FileRejection[]) => {
     const selectedFile = acceptedFiles[0];
-  
-    // 1. fileRejections가 있을 경우 (react-dropzone 필터링에서 탈락)
+
     if (fileRejections.length > 0) {
       setError('지원하지 않는 파일 형식입니다. (.pdf, .doc, .docx만 가능)');
       return;
     }
-  
-    // 2. MIME 타입 검사 (확장자 우회 방지)
+
     const validMimeTypes = [
       'application/pdf',
       'application/msword',
@@ -35,54 +28,54 @@ const UploadPage: React.FC = () => {
       setError('파일 형식이 유효하지 않습니다. (.pdf, .doc, .docx만 가능)');
       return;
     }
-  
-    // 3. 크기 제한
+
     if (selectedFile.size > 10 * 1024 * 1024) {
       setError('10MB 이하의 파일만 업로드 가능합니다.');
       return;
     }
-  
-    // 통과
+
     setError('');
     setFile(selectedFile);
-  };  
+  };
 
-  const {getRootProps, getInputProps, isDragActive} = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     multiple: false,
+    noClick: true,
+    noKeyboard: true,
     accept: {
       'application/pdf': ['.pdf'],
       'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
     },
   });
-  
+
   const handleAnalyze = async () => {
     if (!file) {
       setError('파일을 먼저 업로드해주세요.');
       toast.error('파일을 먼저 업로드해주세요.');
       return;
     }
-  
+
     setLoading(true);
     setError('');
-  
+
     const formData = new FormData();
     formData.append('file', file);
-  
+
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // ⏱️ 10초 타임아웃 설정
-  
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const res = await axios.post('/api/analyze', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        signal: controller.signal, // 🚨 abortable
+        signal: controller.signal,
       });
-  
-      clearTimeout(timeoutId); // 요청 완료 시 타이머 해제
-  
+
+      clearTimeout(timeoutId);
+
       toast.success('파일 업로드 및 분석 요청이 완료되었습니다.');
       navigate('/result', {
         state: {
@@ -108,13 +101,11 @@ const UploadPage: React.FC = () => {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="max-w-2xl mx-auto py-10 px-4">
       <h2 className="text-2xl font-bold mb-6 text-center">문서 업로드 및 분석</h2>
 
-      {/* 드래그 앤 드롭 업로드 박스 */}
       <div
         {...getRootProps()}
         className={`border-2 border-dashed p-10 text-center cursor-pointer mb-4 transition-all duration-300 rounded-lg ${
@@ -124,7 +115,6 @@ const UploadPage: React.FC = () => {
         }`}
       >
         <input {...getInputProps()} />
-
         {isDragActive ? (
           <p className="text-lg font-semibold">여기에 파일을 놓아 업로드하세요 📂</p>
         ) : (
@@ -132,21 +122,11 @@ const UploadPage: React.FC = () => {
             <p className="mb-2">이 영역에 파일을 드래그하거나,</p>
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={open}
               className="px-4 py-2 border rounded bg-white hover:bg-gray-50"
             >
               파일을 선택하세요
             </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  onDrop([e.target.files[0]], []);
-                }
-              }}
-            />
             <p className="text-sm mt-4 text-gray-500">
               허용 확장자: .pdf, .doc, .docx | 최대 10MB
             </p>
@@ -154,7 +134,6 @@ const UploadPage: React.FC = () => {
         )}
       </div>
 
-      {/* 선택된 파일 정보 */}
       {file && (
         <div
           className="bg-blue-50 text-blue-800 px-4 py-2 rounded-md shadow-sm flex items-center justify-between text-sm"
@@ -173,11 +152,8 @@ const UploadPage: React.FC = () => {
         </div>
       )}
 
-
-      {/* 에러 메시지 */}
       {error && <p className="text-red-500 text-sm text-center mt-2">{error}</p>}
 
-      {/* 분석 버튼 */}
       <div className="flex justify-center mt-6">
         <button
           onClick={handleAnalyze}
