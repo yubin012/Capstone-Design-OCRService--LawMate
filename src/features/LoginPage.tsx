@@ -19,11 +19,14 @@ const LoginPage = () => {
     }
 
     try {
-      const res = await axios.post('/api/login', { email, password });
+      const res = await axios.post('/auth/login', { email, password });
+      // console.log('로그인 응답:', res); // 전체 응답 객체
+      // console.log('응답 데이터:', res.data); // 실제 데이터
       localStorage.setItem('token', res.data.token);
       navigate('/');
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
+        console.error('❌ 로그인 실패 응답:', err.response); // 에러 응답 확인
         setError(err.response?.data?.message || '로그인에 실패했습니다.');
       } else {
         setError('알 수 없는 오류가 발생했습니다.');
