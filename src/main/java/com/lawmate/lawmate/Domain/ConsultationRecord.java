@@ -15,7 +15,7 @@ import com.lawmate.lawmate.Domain.LegalTemplate;
 public class ConsultationRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long consultationId;
+    private Long id;
 
     // 한명의 사용자에게 많은 상담 기록이 연결되어있다는 뜻
     @ManyToOne(fetch = FetchType.LAZY)

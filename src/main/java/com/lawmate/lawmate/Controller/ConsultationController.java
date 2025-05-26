@@ -33,7 +33,7 @@ public class ConsultationController {
 
     // 🔹 첫 질문 처리: 세션 생성 + 첫 질문 DB 저장 + GPT 응답 반환
     @PostMapping("/startChat")
-    @Operation(summary = "상담 시작", description = "JWT에서 사용자 ID를 추출하여 상담 세션 생성")
+    @Operation(summary = "상담 시작", description = "JWT에서 사용자 ID를 추출하여 상담 세션 생성+DB에 첫 질문 저장 ")
     public ResponseEntity<ChatResponseDto> startConsultation(
             @RequestBody ConsultationStartRequestDto request,
             HttpServletRequest httpRequest) {
@@ -57,7 +57,24 @@ public class ConsultationController {
     }
 
     @PostMapping("/chat")
-    @Operation(summary = "상담 중 대화 이어가기", description = "이전 메시지들을 바탕으로 GPT가 답변 생성")
+    @Operation(summary = "상담 중 대화 이어가기", description = """
+            사용자의 입력 메시지를 받아 이전 대화 기록과 함께 GPT에게 전달하여 응답을 생성합니다.
+
+            ✅ 주요 처리 흐름:
+            1. 백: GPT 호출 전 system 메시지로 역할 및 규칙 프롬프트를 추가함.
+
+            2. 프론트 :사용자 메시지 리스트를 함께 전달하여 GPT가 문맥을 유지하도록 한다.
+
+            3. 사용자는 상담 중, 종료 여부, 문서 작성 여부만 자연어로 말하면 됨.
+            (예: "그만할래요", "문서 작성해줘" 등)
+
+            4. 위의 요청에 따라 GPT의 응답이 특정 채팅 종료 키워드를 출력하며 후속 처리를 자동으로 수행합니다:
+                  GPT 응답 내용에 따라 백엔드에서 DB 저장 로직이 자동 수행.
+               - '✅ 문서 작성 모드로 전환합니다'가 포함되면: DB에 요약(summary), 이슈(issue), 템플릿(template) 저장 + 문서요약도 저장
+               - '✅ 상담을 종료하겠습니다'가 포함되면: summary / issue / template 정보만 저장
+
+            띠라서 프론트는 POST /chat으로 매채팅마다 메시지 리스트만 보내면 됨. 그러다 gpt 에서 특정 채팅 종료 키워드 출력 시 페이지 전환 구현 필요
+            """)
     public ResponseEntity<ChatResponseDto> continueChat(@RequestBody ChatRequestDto request) {
         // 1. GPT 응답 메시지 생성
         String gptMessage = chatBotService.processChat(request).getMessage();
@@ -69,12 +86,18 @@ public class ConsultationController {
         return ResponseEntity.ok(response);
     }
 
-    // 🔹 상담 종료: 요약/이슈/템플릿 저장
-    @PostMapping("/end/{consultationId}")
-    @Operation(summary = "상담 종료", description = "summary / issue / template 저장")
-    public ResponseEntity<Void> endConsultation(@PathVariable Long consultationId,
-            @RequestBody ConsultationEndRequestDto request) {
-        consultationService.endConsultation(consultationId, request);
-        return ResponseEntity.ok().build();
-    }
+    /*
+     * // 🔹 상담 종료: 요약/이슈/템플릿 저장
+     * 
+     * @PostMapping("/end/{consultationId}")
+     * 
+     * @Operation(summary = "상담 종료", description = "summary / issue / template 저장")
+     * public ResponseEntity<Void> endConsultation(@PathVariable Long
+     * consultationId,
+     * 
+     * @RequestBody ConsultationEndRequestDto request) {
+     * consultationService.endConsultation(consultationId, request);
+     * return ResponseEntity.ok().build();
+     * }
+     */
 }

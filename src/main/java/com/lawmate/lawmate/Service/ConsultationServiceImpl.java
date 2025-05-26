@@ -30,7 +30,7 @@ public class ConsultationServiceImpl implements ConsultationService {
                 .startment(request.getStartment())
                 .build();
 
-        return consultationRepository.save(record).getConsultationId();
+        return consultationRepository.save(record).getId();
     }
 
     @Override
