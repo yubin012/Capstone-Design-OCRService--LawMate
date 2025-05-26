@@ -16,13 +16,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/user")
-@Tag(name = "3. 마이페이지 API ", description = "상담 및 문서 기록 조회")
+@Tag(name = "4. 마이페이지 API ", description = "상담 및 문서 기록 조회")
 public class UserController {
     private final JwtTokenProvider jwtTokenProvider;
     private final MypageService mypageService;
 
     @GetMapping("/me")
-    @Operation(summary = "마이페이지 조회", description = "현재 로그인한 사용자의 마이페이지 정보를 반환합니다.", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "마이페이지 조회", description = "현재 로그인한 사용자의 마이페이지 정보를 반환합니다.")
     public ResponseEntity<MypageDto> getUserDetails(HttpServletRequest request) {
         Long userId = extractUserId(request);
         MypageDto mypage = mypageService.getMypage(userId);

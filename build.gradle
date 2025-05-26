@@ -35,6 +35,15 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
+	//Jakarta Bean Validation
+	implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final' // Jakarta 3.x 기반
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
+
+	//gpt 응답처리를 위한 okHttp 추가
+	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2' // JsonNode 파싱용
+
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.mysql:mysql-connector-j'

@@ -36,6 +36,7 @@ out/
 ### VS Code ###
 .vscode/
 .env
+README.md
 # Docker files with sensitive information
 docker-compose.override.yml
 docker-compose.prod.yml
