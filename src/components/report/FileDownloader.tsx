@@ -11,10 +11,23 @@ interface FileDownloaderProps {
 const FileDownloader: React.FC<FileDownloaderProps> = ({ reportId, filename, label = '다운로드' }) => {
   const handleDownload = async () => {
     try {
-      const response = await axios.get(`/api/report/download/${reportId}`, {
-        responseType: 'blob', // Blob 타입으로 받아오기
+      // ✅ 다운로드 카운트 비동기 기록
+      axios.post('/api/download-log', {
+        reportId,
+        filename,
+      }, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`, // 인증 토큰 전달
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+        },
+      }).catch(err => {
+        console.warn('📉 다운로드 기록 실패:', err);
+      });
+
+      // ✅ 파일 다운로드 처리
+      const response = await axios.get(`/api/report/download/${reportId}`, {
+        responseType: 'blob',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
         },
       });
 

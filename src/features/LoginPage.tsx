@@ -19,12 +19,12 @@ const LoginPage = () => {
     }
 
     try {
-      const res = await axios.post('/api/login', { email, password });
+      const res = await axios.post('/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
       navigate('/');
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || '로그인에 실패했습니다.');
+        console.error('❌ 로그인 실패 응답:', err.response); // 에러 응답 확인
       } else {
         setError('알 수 없는 오류가 발생했습니다.');
       }
@@ -33,7 +33,18 @@ const LoginPage = () => {
 
   return (
     <div className="max-w-md mx-auto mt-20 p-6 border rounded-md shadow-md relative">
-      <Link to="/" className="absolute top-4 left-4 text-blue-600 hover:underline">← 메인화면으로</Link>
+      {/* 상단 로고 이미지 - 박스 내 상단에 위치, 박스 너비 기준 가운데 정렬 */}
+      <div className="flex justify-center mb-6">
+        <img
+          src="/logo_lawmate.png"
+          alt="LawMate 로고"
+          className="h-20 opacity-90"
+        />
+      </div>
+
+      <Link to="/" className="absolute top-4 left-4 text-blue-600 hover:underline">
+        ← 메인화면으로
+      </Link>
       <h2 className="text-2xl font-bold mb-6 text-center">로그인</h2>
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
         <input

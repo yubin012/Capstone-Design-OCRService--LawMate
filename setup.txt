@@ -91,8 +91,14 @@ npm install \
   react-dropzone \
   html2pdf.js \ 
   daum-postcode \
+  lucide-react \
+  react-quill \ 
+  html2canvas jspdf \
   react-markdown ???
-  
+  npm install react@18 react-dom@18
+  npm install @mantine/core@5.10.5 @mantine/rte@5.10.5 @mantine/hooks@5.10.5 @emotion/react@11.10.5
+
+
 
 
 🧹 5. ESLint + Prettier + Husky 설정 (코드 정리 자동화)

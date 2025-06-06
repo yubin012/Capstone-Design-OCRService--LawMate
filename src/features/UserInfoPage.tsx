@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUserInfo, updateUserInfo, deleteAccount, UserInfo } from '@/api/user';
 import { useLoader } from '@/contexts/LoaderContext';
-import Spinner from '@/components/Spinner';
+import Spinner from '@components/common/Spinner'; // ✅ 경로 수정
 
 const UserInfoPage: React.FC = () => {
   const [user, setUser] = useState<UserInfo | null>(null);
@@ -54,8 +54,8 @@ const UserInfoPage: React.FC = () => {
       setPassword('');
       setConfirmPassword('');
     } catch (err) {
-        console.error('수정 요청 중 에러 발생:', err);
-        setMessage('정보 수정에 실패했습니다.');
+      console.error('수정 요청 중 에러 발생:', err);
+      setError('정보 수정에 실패했습니다.');
     } finally {
       hideLoader();
     }
@@ -70,8 +70,8 @@ const UserInfoPage: React.FC = () => {
       localStorage.removeItem('token');
       navigate('/login');
     } catch (err) {
-        console.error('비밀번호 변경 실패:', err);
-        setPasswordMessage('비밀번호 변경 중 오류가 발생했습니다.');
+      console.error('회원 탈퇴 실패:', err);
+      setError('회원 탈퇴 중 오류가 발생했습니다.');
     } finally {
       hideLoader();
     }

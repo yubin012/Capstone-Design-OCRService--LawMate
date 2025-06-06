@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { getUserInfo, UserInfo } from '@/api/user';
 import { useLoader } from '@/contexts/LoaderContext';
-import Spinner from '@/components/Spinner';
+import Spinner from '@/components/common/Spinner';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import BookmarkList, { BookmarkItem } from '@/components/BookmarkList';
-import ChatLogList, { ChatLogItem } from '@/components/ChatLogList';
-import FileDownloader from '@/components/FileDownloader';
+import { BookmarkItem } from '@/components/user/BookmarkList';
+import ChatLogList, { ChatLogItem } from '@/components/chatbot/ChatLogList';
+import FileDownloader from '@/components/report/FileDownloader';
+import UploadHistoryList from '@/components/upload/UploadHistoryList';
 
 interface Upload {
   id: string;
@@ -17,6 +18,7 @@ interface Upload {
 interface SavedReport {
   id: string;
   title: string;
+  description?: string;
   updatedAt: string;
   downloadUrl: string;
 }
@@ -37,22 +39,39 @@ const MyPage: React.FC = () => {
     const fetchData = async () => {
       try {
         showLoader();
+        setError('');
+
         const info = await getUserInfo();
         setUser(info);
 
-        const [uploadRes, bookmarkRes, chatLogRes, savedReportRes] = await Promise.all([
-          axios.get('/api/uploads'),
-          axios.get('/api/bookmarks'),
-          axios.get('/api/chat-logs'),
-          axios.get('/api/reports/mine'),
-        ]);
-        setUploadHistory(uploadRes.data);
-        setBookmarks(bookmarkRes.data);
-        setChatLogs(chatLogRes.data);
-        setSavedReports(savedReportRes.data);
+        // 더미 API 모드일 때 실제 API 호출은 빈 배열로 초기화
+        if (IS_USE_MOCK_API) {
+          setUploadHistory([]);
+          setBookmarks([]);
+          setChatLogs([]);
+          setSavedReports([]);
+        } else {
+          const [uploadRes, bookmarkRes, chatLogRes, savedReportRes] = await Promise.all([
+            axios.get('/api/uploads'),
+            axios.get('/api/bookmarks'),
+            axios.get('/api/chat-logs'),
+            axios.get('/api/reports/mine'),
+          ]);
+
+          setUploadHistory(uploadRes.data);
+          setBookmarks(bookmarkRes.data);
+          setChatLogs(chatLogRes.data);
+          setSavedReports(savedReportRes.data);
+        }
       } catch (err) {
-        console.error(err);
+        console.error('마이페이지 데이터 불러오기 실패:', err);
         setError('사용자 정보를 불러오는 데 실패했습니다.');
+        setUser(null);
+        // 각 상태 초기화
+        setUploadHistory([]);
+        setBookmarks([]);
+        setChatLogs([]);
+        setSavedReports([]);
       } finally {
         hideLoader();
       }
@@ -98,7 +117,7 @@ const MyPage: React.FC = () => {
         <Spinner />
       ) : (
         <>
-          {/* 🔹 활동 요약 카드 */}
+          {/* 활동 요약 카드 */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
             <div className="bg-gray-100 p-4 rounded text-center">
               <p className="text-lg font-semibold">{user.name}</p>
@@ -110,13 +129,15 @@ const MyPage: React.FC = () => {
             </div>
             <div className="bg-gray-100 p-4 rounded text-center">
               <p className="text-lg font-semibold">
-                {uploadHistory[0] ? new Date(uploadHistory[0].uploadedAt).toLocaleDateString('ko-KR') : '-'}
+                {uploadHistory[0]
+                  ? new Date(uploadHistory[0].uploadedAt).toLocaleDateString('ko-KR')
+                  : '-'}
               </p>
               <p className="text-sm text-gray-600">최근 활동일</p>
             </div>
           </div>
 
-          {/* 🔹 최근 업로드 문서 내역 */}
+          {/* 최근 업로드 문서 내역 */}
           <div className="mt-10">
             <h3 className="text-lg font-semibold mb-3">📄 최근 업로드 문서</h3>
             {uploadHistory.length === 0 ? (
@@ -126,20 +147,35 @@ const MyPage: React.FC = () => {
                 {uploadHistory.map((file) => (
                   <div
                     key={file.id}
-                    className="border rounded-md p-3 bg-gray-50 hover:bg-blue-50 transition cursor-pointer"
-                    onClick={() => navigate(`/result?id=${file.id}`)}
+                    className="border rounded-md p-3 bg-gray-50 hover:bg-blue-50 transition"
                   >
-                    <p className="text-blue-700 font-medium truncate">📎 {file.filename}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      업로드일: {new Date(file.uploadedAt).toLocaleString('ko-KR')}
-                    </p>
+                    <div
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/result?id=${file.id}`)}
+                    >
+                      <p className="text-blue-700 font-medium truncate">📎 {file.filename}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        업로드일: {new Date(file.uploadedAt).toLocaleString('ko-KR')}
+                      </p>
+                    </div>
+
+                    <div className="mt-2 text-right">
+                      <FileDownloader
+                        fileUrl={`/api/uploads/${file.id}/download`}
+                        filename={file.filename}
+                        label="원본 다운로드"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* ✅ 저장된 수정 리포트 */}
+          {/* 전체 업로드 문서 내역 */}
+          <UploadHistoryList />
+
+          {/* 저장된 수정 리포트 */}
           <div className="mt-10">
             <h3 className="text-lg font-semibold mb-3">📝 수정한 리포트</h3>
             {savedReports.length === 0 ? (
@@ -147,7 +183,10 @@ const MyPage: React.FC = () => {
             ) : (
               <ul className="space-y-2 text-sm">
                 {savedReports.map((report) => (
-                  <li key={report.id} className="flex justify-between items-center border p-3 rounded-md">
+                  <li
+                    key={report.id}
+                    className="flex justify-between items-center border p-3 rounded-md"
+                  >
                     <div>
                       <button
                         onClick={() => navigate(`/result?id=${report.id}`)}
@@ -158,21 +197,50 @@ const MyPage: React.FC = () => {
                       <p className="text-xs text-gray-500 mt-1">
                         수정일: {new Date(report.updatedAt).toLocaleString('ko-KR')}
                       </p>
+
+                      {report.description && (
+                        <p className="text-xs text-gray-600 mt-1 truncate">
+                          ✏️ {report.description}
+                        </p>
+                      )}
                     </div>
-                    <FileDownloader fileUrl={report.downloadUrl} filename={report.title + '.pdf'} label="PDF 저장" />
+
+                    <FileDownloader
+                      reportId={report.id}
+                      filename={report.title + '.pdf'}
+                      label="PDF 저장"
+                    />
                   </li>
                 ))}
               </ul>
             )}
           </div>
 
-          {/* ✅ 북마크 리스트 */}
-          <BookmarkList bookmarks={bookmarks} />
+          {/* 북마크된 문서 리스트 */}
+          <div className="mt-10">
+            <h3 className="text-lg font-semibold mb-3">⭐ 북마크한 문서</h3>
+            {bookmarks.length === 0 ? (
+              <p className="text-sm text-gray-500">북마크한 문서가 없습니다.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {bookmarks.map((item) => (
+                  <div
+                    key={item.id}
+                    className="border rounded-md p-3 bg-yellow-50 hover:bg-yellow-100 transition cursor-pointer"
+                    onClick={() => navigate(`/result?id=${item.id}`)}
+                  >
+                    <p className="text-yellow-700 font-medium truncate">📌 {item.title}</p>
+                    <p className="text-xs text-gray-500 mt-1">북마크 ID: {item.id}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-          {/* ✅ 챗봇 사용 내역 */}
+          {/* 챗봇 사용 내역 */}
           <ChatLogList logs={chatLogs} />
 
-          {/* 🔹 비밀번호 변경 */}
+          {/* 비밀번호 변경 */}
           <div className="mt-12">
             <h3 className="font-semibold text-lg mb-2">비밀번호 변경</h3>
             <input

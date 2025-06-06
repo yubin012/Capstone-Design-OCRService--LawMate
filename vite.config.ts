@@ -6,14 +6,24 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: [
+      // 세부 컴포넌트 디렉토리
+      { find: '@components/chatbot', replacement: path.resolve(__dirname, 'src/components/chatbot') },
+      { find: '@components/common', replacement: path.resolve(__dirname, 'src/components/common') },
+      { find: '@components/report', replacement: path.resolve(__dirname, 'src/components/report') },
+      { find: '@components/upload', replacement: path.resolve(__dirname, 'src/components/upload') },
+      { find: '@components/user', replacement: path.resolve(__dirname, 'src/components/user') },
       { find: '@components', replacement: path.resolve(__dirname, 'src/components') },
+
+      // 주요 디렉토리
       { find: '@features', replacement: path.resolve(__dirname, 'src/features') },
-      { find: '@hooks', replacement: path.resolve(__dirname, 'src/hooks') },
-      { find: '@utils', replacement: path.resolve(__dirname, 'src/utils') },
+      { find: '@contexts', replacement: path.resolve(__dirname, 'src/contexts') },
       { find: '@api', replacement: path.resolve(__dirname, 'src/api') },
+      { find: '@utils', replacement: path.resolve(__dirname, 'src/utils') },
+      { find: '@types', replacement: path.resolve(__dirname, 'src/types') },
       { find: '@assets', replacement: path.resolve(__dirname, 'src/assets') },
-      { find: '@contexts', replacement: path.resolve(__dirname, 'src/contexts') }, // ✅ 이 줄 추가
-      { find: '@', replacement: path.resolve(__dirname, 'src') }, // ✅ 마지막에 둬야 함
+
+      // fallback (항상 마지막)
+      { find: '@', replacement: path.resolve(__dirname, 'src') },
     ],
   },
 });

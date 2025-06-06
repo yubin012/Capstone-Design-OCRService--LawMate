@@ -1,9 +1,10 @@
 // src/features/ChatbotPage.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import ChatBubble from '@/components/ChatBubble';
-import ChatInput from '@/components/ChatInput';
+import ChatBubble from '@/components/chatbot/ChatBubble';
+import ChatInput from '@/components/chatbot/ChatInput';
 import { loadChatHistory, saveChatHistory, clearChatHistory } from '@/utils/chatStorage';
+import { useNavigate } from 'react-router-dom';
 
 export interface Message {
   sender: 'user' | 'bot';
@@ -18,6 +19,7 @@ const ChatbotPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const stored = loadChatHistory();
@@ -29,8 +31,7 @@ const ChatbotPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const getTime = () =>
-    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const getTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const typeBotReply = async (text: string) => {
     const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -48,20 +49,17 @@ const ChatbotPage: React.FC = () => {
     const userMsg: Message = { sender: 'user', text: input, timestamp: getTime() };
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
-
     setMessages((prev) => [...prev, { sender: 'bot', text: '__typing__', timestamp: getTime() }]);
 
     try {
       const res = await axios.post('/api/chatbot', { question: input });
       const { answer, type, suggestions } = res.data;
 
-      // remove typing bubble
       setMessages((prev) =>
         prev.filter((msg) => !(msg.sender === 'bot' && msg.text === '__typing__'))
       );
 
       if (type === 'suggest' && Array.isArray(suggestions)) {
-        // ✅ 추천 질문 말풍선 처리
         setMessages((prev) => [
           ...prev,
           {
@@ -73,7 +71,6 @@ const ChatbotPage: React.FC = () => {
           },
         ]);
       } else {
-        // ✅ 일반 답변 애니메이션
         setMessages((prev) => [...prev, { sender: 'bot', text: '', timestamp: getTime() }]);
         await typeBotReply(answer || '응답을 받아올 수 없습니다.');
       }
@@ -94,19 +91,54 @@ const ChatbotPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-10 px-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">💬 챗봇 상담</h2>
-
-      <div className="flex justify-end mb-2">
+    <div className="flex flex-col h-[calc(85vh-4rem)]">
+      <div className="flex justify-between items-center px-4 pt-4">
+        <h2 className="text-xl font-bold">법률 상담</h2>
         <button
           onClick={handleReset}
           className="text-sm text-gray-500 hover:text-red-600 underline"
         >
-          🗑️ 대화 초기화
+          Chatbot 초기화
         </button>
       </div>
 
-      <div className="border rounded p-4 h-[400px] overflow-y-auto bg-gray-50 mb-4 shadow-sm">
+      <div
+        className="flex-1 overflow-y-auto rounded shadow-inner p-4 space-y-5 bg-no-repeat bg-center bg-contain"
+        style={{ 
+          backgroundImage: `url('/chat_background_lawmate.png')`,
+          backgroundSize: '50%', 
+        }}
+      >
+        <div className="mb-6 text-center">
+          <img
+            src="/ai_law_icon_lawmate.png"
+            alt="AI 법률 상담"
+            className="mx-auto h-28 mb-4"
+          />
+          <h3 className="text-xl font-bold">AI 법률 상담 시작하기</h3>
+          <p className="text-gray-600 mt-2">
+            어떤 법적 문제를 겪고 계신가요? 아래에 입력해 주세요.
+          </p>
+          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-700">
+            <div className="bg-white p-4 rounded shadow text-center">
+              <strong className="block font-bold mb-1">법률 문서 작성 지원</strong>
+              계약서, 합의서, 고소장까지 필요한 문서를 손쉽게 작성하세요.
+            </div>
+            <div className="bg-white p-4 rounded shadow text-center">
+              <strong className="block font-bold mb-1">법률 상담 및 조언</strong>
+              궁금한 법률 문제, LawMate가 빠르게 상담해 드립니다.
+            </div>
+            <div className="bg-white p-4 rounded shadow text-center">
+              <strong className="block font-bold mb-1">문서 템플릿 추천</strong>
+              상황에 맞는 최적의 템플릿을 추천해드립니다.
+            </div>
+            <div className="bg-white p-4 rounded shadow text-center">
+              <strong className="block font-bold mb-1">리스크 분석 가이드</strong>
+              문서 속 리스크와 수정 방향을 안내합니다.
+            </div>
+          </div>
+        </div>
+
         {messages.map((msg, idx) => (
           <ChatBubble
             key={idx}
@@ -121,7 +153,9 @@ const ChatbotPage: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <ChatInput onSend={handleSend} disabled={loading} inputRef={inputRef} />
+      <div className="border-t bg-white p-3 shadow-inner">
+        <ChatInput onSend={handleSend} disabled={loading} inputRef={inputRef} />
+      </div>
     </div>
   );
 };
