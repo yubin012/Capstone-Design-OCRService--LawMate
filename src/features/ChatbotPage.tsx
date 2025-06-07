@@ -1,10 +1,11 @@
 // src/features/ChatbotPage.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
 import ChatBubble from '@/components/chatbot/ChatBubble';
 import ChatInput from '@/components/chatbot/ChatInput';
 import { loadChatHistory, saveChatHistory, clearChatHistory } from '@/utils/chatStorage';
 import { useNavigate } from 'react-router-dom';
+import { startChat, continueChat, sendChatToBot } from '@/api/chat';
+import { IS_USE_MOCK_API } from '@/routes/config';
 
 export interface Message {
   sender: 'user' | 'bot';
@@ -17,6 +18,7 @@ export interface Message {
 const ChatbotPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [consultationId, setConsultationId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -52,28 +54,26 @@ const ChatbotPage: React.FC = () => {
     setMessages((prev) => [...prev, { sender: 'bot', text: '__typing__', timestamp: getTime() }]);
 
     try {
-      const res = await axios.post('/api/chatbot', { question: input });
-      const { answer, type, suggestions } = res.data;
+      let answer = '';
 
-      setMessages((prev) =>
-        prev.filter((msg) => !(msg.sender === 'bot' && msg.text === '__typing__'))
-      );
-
-      if (type === 'suggest' && Array.isArray(suggestions)) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: 'bot',
-            text: answer || '다음 중 선택해 주세요.',
-            type: 'suggest',
-            options: suggestions,
-            timestamp: getTime(),
-          },
-        ]);
+      if (IS_USE_MOCK_API) {
+        const res = await sendChatToBot(input);
+        answer = res.answer;
       } else {
-        setMessages((prev) => [...prev, { sender: 'bot', text: '', timestamp: getTime() }]);
-        await typeBotReply(answer || '응답을 받아올 수 없습니다.');
+        let response;
+        if (consultationId === null) {
+          response = await startChat(input);
+          setConsultationId(response.consultationId);
+        } else {
+          const messagesToSend = [{ role: 'user', content: input }];
+          response = await continueChat(consultationId, messagesToSend);
+        }
+        answer = response.message || '응답을 받아올 수 없습니다.';
       }
+
+      setMessages((prev) => prev.filter((msg) => !(msg.sender === 'bot' && msg.text === '__typing__')));
+      setMessages((prev) => [...prev, { sender: 'bot', text: '', timestamp: getTime() }]);
+      await typeBotReply(answer);
     } catch (e) {
       console.error(e);
       setMessages((prev) => [
@@ -88,6 +88,7 @@ const ChatbotPage: React.FC = () => {
   const handleReset = () => {
     clearChatHistory();
     setMessages([]);
+    setConsultationId(null);
   };
 
   return (
@@ -104,9 +105,9 @@ const ChatbotPage: React.FC = () => {
 
       <div
         className="flex-1 overflow-y-auto rounded shadow-inner p-4 space-y-5 bg-no-repeat bg-center bg-contain"
-        style={{ 
+        style={{
           backgroundImage: `url('/chat_background_lawmate.png')`,
-          backgroundSize: '50%', 
+          backgroundSize: '50%',
         }}
       >
         <div className="mb-6 text-center">

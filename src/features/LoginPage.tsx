@@ -21,6 +21,7 @@ const LoginPage = () => {
     try {
       const res = await axios.post('/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
       navigate('/');
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {

@@ -1,3 +1,4 @@
+// src/api/auth.ts
 import axios from 'axios';
 
 axios.defaults.baseURL = import.meta.env.VITE_API_URL;
@@ -9,16 +10,22 @@ export interface SignupData {
   password: string;
 }
 
-// ✅ 회원가입 요청 (이메일 인증 포함 여부는 백엔드 구현에 따라 다름)
+// ✅ 회원가입 요청
 export const signupWithEmailVerification = async (data: SignupData): Promise<void> => {
   await axios.post('/auth/signup', data);
 };
 
-// 인증 토큰 반환 함수
+// ✅ accessToken 반환 함수 (정확한 키명 사용)
 export const getToken = (): string | null => {
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem('token'); // ✅ 여기 통일
   if (token) return token;
-
-  // 임시 더미 토큰 반환 (실제 백엔드 토큰 아님, 백엔드 미연동 시 개발용)
   return 'dummy-token-for-dev';
+};
+
+// ✅ JWT 헤더 생성 함수
+export const getAuthHeaders = () => {
+  const token = getToken();
+  return {
+    Authorization: `Bearer ${token}`,
+  };
 };
