@@ -8,7 +8,7 @@ import com.lawmate.lawmate.DTO.MessageDto;
 import com.lawmate.lawmate.Service.ConsultationService;
 import com.lawmate.lawmate.Service.ChatBotService;
 import com.lawmate.lawmate.Config.JWT.JwtTokenProvider;
-
+//import com.lawmate.lawmate.Service.SummaryDocumentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +30,7 @@ public class ConsultationController {
     private final ConsultationService consultationService;
     private final ChatBotService chatBotService;
     private final JwtTokenProvider jwtTokenProvider;
+    // private final SummaryDocumentService summaryDocumentService;
 
     // 🔹 첫 질문 처리: 세션 생성 + 첫 질문 DB 저장 + GPT 응답 반환
     @PostMapping("/startChat")
@@ -70,8 +71,7 @@ public class ConsultationController {
 
             4. 위의 요청에 따라 GPT의 응답이 특정 채팅 종료 키워드를 출력하며 후속 처리를 자동으로 수행합니다:
                   GPT 응답 내용에 따라 백엔드에서 DB 저장 로직이 자동 수행.
-               - '✅ 문서 작성 모드로 전환합니다'가 포함되면: DB에 요약(summary), 이슈(issue), 템플릿(template) 저장 + 문서요약도 저장
-               - '✅ 상담을 종료하겠습니다'가 포함되면: summary / issue / template 정보만 저장
+              - '✅ 필요한 정보를 모두 확인했습니다. 이제 문서 작성 모드로 전환합니다.' 가 출력되면 "/json/{consultationId} 로 API 자동 호출 필요
 
             띠라서 프론트는 POST /chat으로 매채팅마다 메시지 리스트만 보내면 됨. 그러다 gpt 에서 특정 채팅 종료 키워드 출력 시 페이지 전환 구현 필요
             """)
@@ -87,16 +87,21 @@ public class ConsultationController {
     }
 
     /*
-     * // 🔹 상담 종료: 요약/이슈/템플릿 저장
+     * // 자동 호출용 트리거
      * 
-     * @PostMapping("/end/{consultationId}")
+     * @PostMapping("/StartDocument/{consultationId}")
      * 
-     * @Operation(summary = "상담 종료", description = "summary / issue / template 저장")
-     * public ResponseEntity<Void> endConsultation(@PathVariable Long
-     * consultationId,
+     * @Operation(summary = "상담 종료+ 자동 문서 생성 시작 ", description =
+     * "챗봇 그냥 종료시 호출 x, 문서 자동 생성이 필요한 종료인 경우에만 상담 id 를 통해 호출하면 됨.")
+     * public ResponseEntity<Void> endConsultation(
+     * 
+     * @PathVariable Long consultationId,
      * 
      * @RequestBody ConsultationEndRequestDto request) {
-     * consultationService.endConsultation(consultationId, request);
+     * 
+     * // 2. 자동 문서 생성 트리거
+     * // summaryDocumentService.generateFromChat(consultationId); // 🔹 요기가 핵심
+     * 
      * return ResponseEntity.ok().build();
      * }
      */

@@ -28,11 +28,8 @@ public class GptInfo {
     @JoinColumn(name = "consultation_id")
     private ConsultationRecord consultation;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private LegalTemplate template;
-
-    @Lob
-    private String summaryText;// GPT가 생성한 요약 내용 (문서 생성을 위한 정보)
+    @Lob // 문서 작성용 요약
+    private String document_summary;// GPT가 생성한 요약 내용 (문서 생성을 위한 정보)
 
     private LocalDateTime createdAt;
 
