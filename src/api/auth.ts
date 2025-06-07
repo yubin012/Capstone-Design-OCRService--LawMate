@@ -1,4 +1,3 @@
-// src/api/auth.ts
 import axios from 'axios';
 
 axios.defaults.baseURL = import.meta.env.VITE_API_URL;
@@ -15,16 +14,17 @@ export const signupWithEmailVerification = async (data: SignupData): Promise<voi
   await axios.post('/auth/signup', data);
 };
 
-// ✅ accessToken 반환 함수 (정확한 키명 사용)
+// ✅ accessToken 반환 함수 (fallback 제거)
 export const getToken = (): string | null => {
-  const token = localStorage.getItem('token'); // ✅ 여기 통일
-  if (token) return token;
-  return 'dummy-token-for-dev';
+  return localStorage.getItem('token');
 };
 
-// ✅ JWT 헤더 생성 함수
+// ✅ JWT 인증 헤더 생성 함수 (명확한 예외 처리 포함)
 export const getAuthHeaders = () => {
   const token = getToken();
+  if (!token) {
+    throw new Error('No token found in localStorage');
+  }
   return {
     Authorization: `Bearer ${token}`,
   };

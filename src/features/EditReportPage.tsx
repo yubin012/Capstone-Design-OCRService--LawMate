@@ -1,4 +1,4 @@
-// src/features/EditReportPage.tsx
+// ✅ EditReportPage.tsx (v2: fillTemplateFromResponse 적용)
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnalyzedClause, getReportById, saveRevisedClauses } from '@/api/report';
@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { RichTextEditor } from '@mantine/rte';
+import { fillTemplateFromResponse } from '@/utils/fillTemplate';
 
 const EditReportPage: React.FC = () => {
   const location = useLocation();
@@ -20,13 +21,13 @@ const EditReportPage: React.FC = () => {
   const [analysisText, setAnalysisText] = useState('');
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // PDF용 숨겨진 문서 내용 div ref
   const hiddenContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
+    const dataParam = params.get('data');
+
     if (!id) {
       navigate('/upload');
       return;
@@ -37,7 +38,6 @@ const EditReportPage: React.FC = () => {
       try {
         showLoader();
         setLoading(true);
-
         const result = await getReportById(id);
 
         setClauses(result.clauses || []);
@@ -47,12 +47,20 @@ const EditReportPage: React.FC = () => {
           setAnalysisText('');
         }
 
-        setEditorContent(result.documentContent || getDefaultTemplate());
+        if (result.documentContent) {
+          setEditorContent(result.documentContent);
+        } else if (dataParam) {
+          const parsed = JSON.parse(decodeURIComponent(dataParam));
+          const filled = fillTemplateFromResponse(parsed);
+          if (filled) setEditorContent(filled);
+          else setEditorContent(getDefaultTemplate());
+        } else {
+          setEditorContent(getDefaultTemplate());
+        }
+
         setError('');
       } catch (err) {
         console.error(err);
-
-        // 백엔드 연결 실패 시 더미 데이터 세팅
         setClauses([
           {
             id: 'demo-1',
@@ -73,7 +81,6 @@ const EditReportPage: React.FC = () => {
     fetch();
   }, [location.search, navigate, showLoader, hideLoader]);
 
-  // 기본 문서 템플릿 (HTML 문자열)
   const getDefaultTemplate = (): string => `
     <h2 style="text-align:center;">내용증명서</h2>
     <p>■ 일 시:</p>
@@ -101,9 +108,7 @@ const EditReportPage: React.FC = () => {
         .filter((c) => c.revised && c.revised !== c.original)
         .map((c) => ({ id: c.id, revised: c.revised || '' }));
 
-      // 백엔드 API saveRevisedClauses가 editorContent 필드 받도록 수정 필요
       await saveRevisedClauses(reportId, updates, editorContent);
-
       toast.success('수정 내용이 성공적으로 저장되었습니다.');
     } catch (err) {
       console.error('❗ 저장 실패:', err);
@@ -115,7 +120,6 @@ const EditReportPage: React.FC = () => {
 
   const handleDownloadPdf = async () => {
     if (!hiddenContentRef.current) return;
-
     setLoadingPdf(true);
     try {
       const canvas = await html2canvas(hiddenContentRef.current, { scale: 2 });
@@ -137,21 +141,15 @@ const EditReportPage: React.FC = () => {
   return (
     <>
       {loading ? (
-        <div
-          className="fixed inset-0 flex items-center justify-center bg-white z-50"
-          style={{ minHeight: '80vh' }}
-        >
+        <div className="fixed inset-0 flex items-center justify-center bg-white z-50" style={{ minHeight: '80vh' }}>
           <p className="text-lg text-gray-700">로딩 중입니다... 잠시만 기다려주세요.</p>
         </div>
       ) : (
         <div className="max-w-7xl mx-auto py-8 px-4 grid grid-cols-12 gap-8 min-h-[80vh]">
-          {/* 좌측 - 분석 결과 */}
           <div className="col-span-4 p-4 bg-blue-50 rounded shadow space-y-4 overflow-auto">
             <h3 className="text-xl font-semibold mb-4">📝 분석 결과 및 주의사항</h3>
             {error && <p className="text-red-500 mb-4">{error}</p>}
-            <div className="text-sm whitespace-pre-wrap" style={{ whiteSpace: 'pre-wrap' }}>
-              {analysisText || '분석 결과가 없거나 챗봇 작성 요청 시 비어있음'}
-            </div>
+            <div className="text-sm whitespace-pre-wrap">{analysisText}</div>
             <div className="mt-6 space-y-4">
               {clauses.length > 0 ? (
                 clauses.map((clause, idx) => (
@@ -176,11 +174,8 @@ const EditReportPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 우측 문서 작성 및 수정 */}
           <div className="col-span-8 p-4 bg-white rounded shadow flex flex-col h-[calc(80vh-4rem)]">
             <h3 className="text-xl font-semibold mb-4 flex-shrink-0">📄 문서 작성 및 수정</h3>
-
-            {/* 에디터 래퍼: flex-grow + overflow-auto */}
             <div className="flex-grow overflow-auto">
               <RichTextEditor
                 value={editorContent}
@@ -194,8 +189,6 @@ const EditReportPage: React.FC = () => {
                 style={{ height: '70vh' }}
               />
             </div>
-
-            {/* 버튼 그룹: flex-shrink-0 */}
             <div className="flex justify-end space-x-3 mt-4 flex-shrink-0">
               <button
                 onClick={handleSave}
@@ -203,7 +196,6 @@ const EditReportPage: React.FC = () => {
               >
                 💾 저장하기
               </button>
-
               <button
                 onClick={handleDownloadPdf}
                 disabled={loadingPdf}
@@ -217,7 +209,6 @@ const EditReportPage: React.FC = () => {
           </div>
         </div>
       )}
-      {/* PDF 다운로드용 숨겨진 문서 내용 (에디터 UI 없이) */}
       <div
         ref={hiddenContentRef}
         className="max-w-7xl mx-auto p-8 bg-white text-black"

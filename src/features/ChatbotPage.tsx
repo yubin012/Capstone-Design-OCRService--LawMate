@@ -1,4 +1,3 @@
-// src/features/ChatbotPage.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import ChatBubble from '@/components/chatbot/ChatBubble';
 import ChatInput from '@/components/chatbot/ChatInput';
@@ -65,10 +64,48 @@ const ChatbotPage: React.FC = () => {
           response = await startChat(input);
           setConsultationId(response.consultationId);
         } else {
-          const messagesToSend = [{ role: 'user', content: input }];
+          const messagesToSend = messages
+            .filter((m) => m.sender === 'user' || m.sender === 'bot')
+            .map((m) => ({
+              role: m.sender === 'user' ? 'user' : 'assistant',
+              content: m.text,
+            }))
+            .concat({ role: 'user', content: input });
+
           response = await continueChat(consultationId, messagesToSend);
         }
         answer = response.message || '응답을 받아올 수 없습니다.';
+
+        // ✅ 문서 작성 모드 진입 트리거 감지
+        if (answer.includes('문서 작성 모드로 전환합니다')) {
+          setMessages((prev) => [
+            ...prev.filter((msg) => !(msg.sender === 'bot' && msg.text === '__typing__')),
+            {
+              sender: 'bot',
+              text: '문서 작성 모드로 이동하려면 아래 버튼을 클릭해주세요.',
+              type: 'suggest',
+              options: ['문서 작성하기'],
+              timestamp: getTime(),
+            },
+          ]);
+
+          // ✅ 예시로 임시 데이터 포함해 바로 전환 처리 (실제론 answer 파싱해야 함)
+          setTimeout(() => {
+            navigate('/editor', {
+              state: {
+                임대인: '박영희',
+                임차인: '김철수',
+                주소: '서울시 강남구',
+                보증금: '10,000,000원',
+                계약금: '3,000,000원',
+                잔금: '7,000,000원',
+                계약기간: '2025.07.01 ~ 2027.06.30',
+              },
+            });
+          }, 3000);
+
+          return;
+        }
       }
 
       setMessages((prev) => prev.filter((msg) => !(msg.sender === 'bot' && msg.text === '__typing__')));
@@ -111,15 +148,10 @@ const ChatbotPage: React.FC = () => {
         }}
       >
         <div className="mb-6 text-center">
-          <img
-            src="/ai_law_icon_lawmate.png"
-            alt="AI 법률 상담"
-            className="mx-auto h-28 mb-4"
-          />
+          <img src="/ai_law_icon_lawmate.png" alt="AI 법률 상담" className="mx-auto h-28 mb-4" />
           <h3 className="text-xl font-bold">AI 법률 상담 시작하기</h3>
-          <p className="text-gray-600 mt-2">
-            어떤 법적 문제를 겪고 계신가요? 아래에 입력해 주세요.
-          </p>
+          <p className="text-gray-600 mt-2">어떤 법적 문제를 겪고 계신가요? 아래에 입력해 주세요.</p>
+
           <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-700">
             <div className="bg-white p-4 rounded shadow text-center">
               <strong className="block font-bold mb-1">법률 문서 작성 지원</strong>
@@ -148,7 +180,13 @@ const ChatbotPage: React.FC = () => {
             type={msg.type}
             options={msg.options}
             timestamp={msg.timestamp}
-            onSelectSuggestion={handleSend}
+            onSelectSuggestion={(option) => {
+              if (option === '문서 작성하기') {
+                navigate('/edit');
+              } else {
+                handleSend(option);
+              }
+            }}
           />
         ))}
         <div ref={messagesEndRef} />

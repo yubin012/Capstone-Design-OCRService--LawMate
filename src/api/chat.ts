@@ -25,14 +25,14 @@ export const sendChatToBot = async (question: string): Promise<BotResponse> => {
     };
   }
 
-  const res = await axios.post('/api/chatbot', { question });
+  const res = await axios.post('/chatbot', { question });
   return res.data;
 };
 
 // ✅ 챗봇 대화 저장
 export const saveChatLog = async (messages: { role: 'user' | 'bot'; content: string }[]): Promise<void> => {
   if (IS_USE_MOCK_API) return;
-  await axios.post('/api/chat/save', { messages });
+  await axios.post('/chat/save', { messages });
 };
 
 // ✅ 대화 이력 불러오기
@@ -48,7 +48,7 @@ export const getChatLogs = async (): Promise<ChatLogItem[]> => {
     ];
   }
 
-  const res = await axios.get('/api/chat-logs');
+  const res = await axios.get('/chat-logs');
   return res.data;
 };
 
@@ -58,7 +58,7 @@ export const startChat = async (startment: string) => {
   console.debug('[DEBUG] startChat headers:', headers);
 
   const res = await axios.post(
-    '/api/consult/startChat',
+    '/consult/startChat',
     { startment },
     { headers }
   );
@@ -77,7 +77,7 @@ export const continueChat = async (
   console.debug('[DEBUG] continueChat headers:', headers);
 
   const res = await axios.post(
-    '/api/consult/chat',
+    '/consult/chat',
     { consultationId, messages },
     { headers }
   );
