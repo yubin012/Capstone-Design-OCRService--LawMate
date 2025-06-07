@@ -44,6 +44,16 @@ dependencies {
 	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2' // JsonNode 파싱용
 
+     // Google Cloud Vision API
+	implementation platform('com.google.cloud:libraries-bom:26.4.0')
+    implementation 'com.google.cloud:google-cloud-vision'
+	implementation 'org.apache.pdfbox:pdfbox:2.0.30'
+	 // Google Cloud Storage
+    implementation 'com.google.cloud:google-cloud-storage:2.20.0'
+
+	// (필요 시 JSON 처리 라이브러리 예: Jackson)
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+	
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.mysql:mysql-connector-j'

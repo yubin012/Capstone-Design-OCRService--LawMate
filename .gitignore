@@ -41,3 +41,4 @@ README.md
 docker-compose.override.yml
 docker-compose.prod.yml
 src/main/resources/application-secret.properties
+src/main/resources/gcp/vision-key.json

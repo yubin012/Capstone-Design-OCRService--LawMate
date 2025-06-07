@@ -11,10 +11,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Comparator;
 import java.util.List;
 import java.io.IOException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/document")
+@Tag(name = "3. 자동 문서 작성 조회 및 저장", description = "채팅에서 '✅ 필요한 정보를 모두 확인했습니다. 이제 문서 작성 모드로 전환합니다.' 가 출력되면 \"/json/{consultationId} 로 API 자동 호출 필요 ")
 public class DocumentController {
 
     private final GptInfoRepository gptInfoRepository;

@@ -40,7 +40,8 @@ public class SecurityConfig {
                                              // 스팩에 따라 작동하기 때문에 컨트롤러에서 따로 설정을 해주어야함함
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
-                        "/swagger-ui.html")
+                        "/swagger-ui.html",
+                        "/pdf/ocr")
                 .permitAll()
                 .anyRequest().authenticated()
                 .and()
