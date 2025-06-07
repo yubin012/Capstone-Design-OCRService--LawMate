@@ -4,19 +4,19 @@ public class TemplatePromptProvider {
 
   public static String getPrompt(TemplateType type) {
     return switch (type) {
-      case CONTENT_PROOF -> getContentProofPrompt();
-      case DEFAMATION_REPORT -> getDefamationPrompt();
-      case PAYMENT_OBJECTION -> getPaymentObjectionPrompt();
-      case LEASE_CONTRACT -> getLeaseContractPrompt();
-      case WILL_DOCUMENT -> getWillDocumentPrompt();
-      case EMPLOYMENT_CONTRACT -> getEmploymentContractPrompt();
-      case LOAN_AGREEMENT -> getLoanAgreementPrompt();
-    } + getFinalConfirmationPrompt();
+      case CONTENT_PROOF -> getCommonRules(type, getContentProofPrompt());
+      case DEFAMATION_REPORT -> getCommonRules(type, getDefamationPrompt());
+      case PAYMENT_OBJECTION -> getCommonRules(type, getPaymentObjectionPrompt());
+      case LEASE_CONTRACT -> getCommonRules(type, getLeaseContractPrompt());
+      case WILL_DOCUMENT -> getCommonRules(type, getWillDocumentPrompt());
+      case EMPLOYMENT_CONTRACT -> getCommonRules(type, getEmploymentContractPrompt());
+      case LOAN_AGREEMENT -> getCommonRules(type, getLoanAgreementPrompt());
+    };
   }
 
   private static String getFinalConfirmationPrompt() {
     return """
-          json 블록을 출력했다면, 수집한 사용자의 정보를 다시 한번 보여주고 아래 문구를 함께 출력해 주세요:
+          json 블록을 출력했다면, 수집한 사용자의 정보를 다시 한번 보여주고(텍스트 형식으로 깔끔하게) 아래 문구를 함께 출력해 주세요:
 
           📌 위 내용이 맞는지 확인해 주세요. 맞다면 "예"라고 답해주세요. 틀리면 "수정할게요"라고 말씀해 주세요.
 
@@ -33,7 +33,6 @@ public class TemplatePromptProvider {
 
         ====== 🧾 공통 안내 사항 ======
         너는 LawMate 의 법률 상담 비서야.
-
         다음 정보를 단계별로 질문하거나 확정 문장으로 제공해.
         반드시 단계별 질문을 끝내면 json 블록을 출력 해야해.
 
