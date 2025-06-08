@@ -1,5 +1,5 @@
-// ✅ EditReportPage.tsx (v2.3: PDF 렌더링 보장 및 여백 적용)
-import React, { useEffect, useState, useRef } from 'react';
+// ✅ EditReportPage.tsx (v2.3: PDF 여백 및 강제 DOM 렌더링 방식 수정)
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnalyzedClause, getReportById, saveRevisedClauses } from '@/api/report';
 import { useLoader } from '@/contexts/LoaderContext';
@@ -21,7 +21,6 @@ const EditReportPage: React.FC = () => {
   const [analysisText, setAnalysisText] = useState('');
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [loading, setLoading] = useState(true);
-  const hiddenContentRef = useRef<HTMLDivElement>(null);
 
   const state = location.state as { templateType?: string; variables?: Record<string, string> } | null;
 
@@ -41,7 +40,6 @@ const EditReportPage: React.FC = () => {
       try {
         showLoader();
         setLoading(true);
-
         if (shouldUseStateTemplate) {
           const filled = fillTemplateFromResponse({
             template: state.templateType!,
@@ -55,7 +53,6 @@ const EditReportPage: React.FC = () => {
             return;
           }
         }
-
         const result = await getReportById(id!);
         setClauses(result.clauses || []);
         setAnalysisText(result.analysisSummary || '분석 결과가 없습니다.');
@@ -103,10 +100,6 @@ const EditReportPage: React.FC = () => {
     <p>발신인 : (인)</p>
   `;
 
-  const handleClauseChange = (index: number, value: string) => {
-    setClauses((prev) => prev.map((c, i) => (i === index ? { ...c, revised: value } : c)));
-  };
-
   const handleSave = async () => {
     try {
       showLoader();
@@ -124,25 +117,30 @@ const EditReportPage: React.FC = () => {
   };
 
   const handleDownloadPdf = async () => {
-    if (!hiddenContentRef.current) return;
     setLoadingPdf(true);
     try {
-      await new Promise((r) => setTimeout(r, 100));
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = editorContent;
+      tempDiv.style.width = '800px';
+      tempDiv.style.padding = '30px';
+      tempDiv.style.backgroundColor = 'white';
+      tempDiv.style.color = 'black';
+      tempDiv.style.position = 'fixed';
+      tempDiv.style.top = '-9999px';
+      tempDiv.style.left = '-9999px';
+      document.body.appendChild(tempDiv);
 
-      const canvas = await html2canvas(hiddenContentRef.current, {
-        scale: 2,
-        useCORS: true,
-      });
+      await new Promise((r) => setTimeout(r, 300));
 
+      const canvas = await html2canvas(tempDiv, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const margin = 10;
-      const topBottomMargin = 10;
       const pdfWidth = pdf.internal.pageSize.getWidth() - margin * 2;
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'PNG', margin, topBottomMargin, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth, pdfHeight);
       pdf.save('edited_report.pdf');
+      document.body.removeChild(tempDiv);
     } catch (err) {
       console.error(err);
       toast.error('PDF 다운로드에 실패했습니다.');
@@ -189,15 +187,12 @@ const EditReportPage: React.FC = () => {
               <RichTextEditor
                 value={editorContent}
                 onChange={setEditorContent}
-                controls={[[
-                  'bold', 'italic', 'underline', 'strike', 'clean'
-                ], [
-                  'unorderedList', 'orderedList'
-                ], [
-                  'blockquote', 'code', 'link', 'image'
-                ], [
-                  'h1', 'h2', 'h3'
-                ]]}
+                controls={[
+                  ['bold', 'italic', 'underline', 'strike', 'clean'],
+                  ['unorderedList', 'orderedList'],
+                  ['blockquote', 'code', 'link', 'image'],
+                  ['h1', 'h2', 'h3']
+                ]}
                 style={{ height: '70vh' }}
               />
             </div>
@@ -216,12 +211,6 @@ const EditReportPage: React.FC = () => {
           </div>
         </div>
       )}
-      <div
-        ref={hiddenContentRef}
-        className="max-w-7xl mx-auto p-8 bg-white text-black"
-        style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '800px', zIndex: -1, visibility: 'hidden' }}
-        dangerouslySetInnerHTML={{ __html: editorContent }}
-      />
     </>
   );
 };
