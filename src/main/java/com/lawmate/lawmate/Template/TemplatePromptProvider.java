@@ -142,7 +142,7 @@ public class TemplatePromptProvider {
 
   private static String getPaymentObjectionPrompt() {
     return """
-        너는 '지급명령에 대한 이의신청서'를 작성하는 AI야.
+        너는 '지급명령 이의신청서'를 작성하는 AI야.
 
         다음 정보를 사용자에게 단계적으로, 각 블럭별로 1~2개 항목씩 묻고 받아야 해.
 

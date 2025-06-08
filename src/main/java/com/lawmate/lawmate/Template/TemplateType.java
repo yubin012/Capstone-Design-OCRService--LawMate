@@ -12,10 +12,10 @@ public enum TemplateType {
     DEFAMATION_REPORT("고소장(명예훼손)", List.of(
             "고소인_성명", "피고소인_성명", "사건_내용", "피해_정도", "고소_이유", "작성일")),
 
-    PAYMENT_OBJECTION("지급명령에 대한 이의신청서 및 답변서", List.of(
+    PAYMENT_OBJECTION("지급명령 이의신청서", List.of(
             "신청인_성명", "피신청인_성명", "사건번호", "이의_사유", "신청_날짜", "작성일")),
 
-    LEASE_CONTRACT("부동산 임대차 계약", List.of(
+    LEASE_CONTRACT("부동산 임대차 계약서", List.of(
             "임대인_성명", "임차인_성명",
             "토지_지목", "토지_면적",
             "건물_구조용도", "건물_면적",
