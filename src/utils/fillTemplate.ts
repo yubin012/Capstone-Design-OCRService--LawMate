@@ -6,10 +6,6 @@ import loanTemplate from '@/templates/loan_temp';
 import proofTemplate from '@/templates/proof_temp';
 import testamentTemplate from '@/templates/testament_temp';
 
-// 각각 따로 import
-import { normalizeTestamentData } from '@/utils/normalizeTestamentData';
-import { normalizeLoanData } from '@/utils/normalizeData';
-
 export const templateMap: Record<string, (variables: Record<string, string>) => string> = {
   CONTENT_PROOF: proofTemplate,
   DEFAMATION_REPORT: complaintTemplate,
@@ -33,13 +29,5 @@ export function fillTemplateFromResponse(data: {
     return null;
   }
 
-  // 템플릿 종류별 전처리 적용
-  switch (template) {
-    case 'WILL_DOCUMENT':
-      return templateFn(normalizeTestamentData(variables));
-    case 'LOAN_AGREEMENT':
-      return templateFn(normalizeLoanData(variables));
-    default:
-      return templateFn(variables);
-  }
+  return templateFn(variables);
 }
