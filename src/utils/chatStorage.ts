@@ -1,30 +1,46 @@
 // src/utils/chatStorage.ts
-import { Message } from '@/features/ChatbotPage';
+import type { Message } from '@/features/ChatbotPage';
 
-const STORAGE_KEY = 'chatHistory';
+const MESSAGE_KEY = 'chatHistory';
+const ID_KEY = 'consultationId';
 
-export const loadChatHistory = (): Message[] => {
+// 채팅 기록 로드
+export function loadChatHistory(): Message[] {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    const saved = localStorage.getItem(MESSAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
   } catch (error) {
-    console.error('⚠️ 채팅 기록 불러오기 실패:', error);
+    console.error('채팅 기록 로드 실패:', error);
     return [];
   }
-};
+}
 
-export const saveChatHistory = (messages: Message[]) => {
+// 채팅 기록 저장
+export function saveChatHistory(messages: Message[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    localStorage.setItem(MESSAGE_KEY, JSON.stringify(messages));
   } catch (error) {
-    console.error('⚠️ 채팅 기록 저장 실패:', error);
+    console.error('채팅 기록 저장 실패:', error);
   }
-};
+}
 
-export const clearChatHistory = () => {
+// 채팅 기록 초기화
+export function clearChatHistory() {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(MESSAGE_KEY);
+    localStorage.removeItem(ID_KEY);
   } catch (error) {
-    console.error('⚠️ 채팅 기록 초기화 실패:', error);
+    console.error('채팅 기록 초기화 실패:', error);
   }
-};
+}
+
+// 상담 ID 저장
+export function saveConsultationId(id: number) {
+  localStorage.setItem(ID_KEY, id.toString());
+}
+
+// 상담 ID 로드
+export function loadConsultationId(): number | null {
+  const raw = localStorage.getItem(ID_KEY);
+  return raw ? parseInt(raw, 10) : null;
+}

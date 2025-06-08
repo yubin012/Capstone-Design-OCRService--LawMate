@@ -1,4 +1,4 @@
-// ✅ EditReportPage.tsx (v2: fillTemplateFromResponse 적용)
+// ✅ EditReportPage.tsx (v2.3: PDF 렌더링 보장 및 여백 적용)
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnalyzedClause, getReportById, saveRevisedClauses } from '@/api/report';
@@ -23,41 +23,49 @@ const EditReportPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const hiddenContentRef = useRef<HTMLDivElement>(null);
 
+  const state = location.state as { templateType?: string; variables?: Record<string, string> } | null;
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
     const dataParam = params.get('data');
+    const shouldUseStateTemplate = !!state?.templateType && !!state?.variables;
 
-    if (!id) {
+    if (!id && !shouldUseStateTemplate) {
       navigate('/upload');
       return;
     }
-    setReportId(id);
+    if (id) setReportId(id);
 
     const fetch = async () => {
       try {
         showLoader();
         setLoading(true);
-        const result = await getReportById(id);
 
+        if (shouldUseStateTemplate) {
+          const filled = fillTemplateFromResponse({
+            template: state.templateType!,
+            variables: state.variables!,
+          });
+          if (filled) {
+            setEditorContent(filled);
+            setClauses([]);
+            setAnalysisText('');
+            setError('');
+            return;
+          }
+        }
+
+        const result = await getReportById(id!);
         setClauses(result.clauses || []);
         setAnalysisText(result.analysisSummary || '분석 결과가 없습니다.');
-
-        if (!result.clauses || result.clauses.length === 0) {
-          setAnalysisText('');
-        }
-
-        if (result.documentContent) {
-          setEditorContent(result.documentContent);
-        } else if (dataParam) {
+        if (!result.clauses || result.clauses.length === 0) setAnalysisText('');
+        if (result.documentContent) setEditorContent(result.documentContent);
+        else if (dataParam) {
           const parsed = JSON.parse(decodeURIComponent(dataParam));
           const filled = fillTemplateFromResponse(parsed);
-          if (filled) setEditorContent(filled);
-          else setEditorContent(getDefaultTemplate());
-        } else {
-          setEditorContent(getDefaultTemplate());
-        }
-
+          setEditorContent(filled ?? getDefaultTemplate());
+        } else setEditorContent(getDefaultTemplate());
         setError('');
       } catch (err) {
         console.error(err);
@@ -79,7 +87,7 @@ const EditReportPage: React.FC = () => {
       }
     };
     fetch();
-  }, [location.search, navigate, showLoader, hideLoader]);
+  }, [location.search, location.state, navigate, showLoader, hideLoader]);
 
   const getDefaultTemplate = (): string => `
     <h2 style="text-align:center;">내용증명서</h2>
@@ -96,9 +104,7 @@ const EditReportPage: React.FC = () => {
   `;
 
   const handleClauseChange = (index: number, value: string) => {
-    setClauses((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, revised: value } : c))
-    );
+    setClauses((prev) => prev.map((c, i) => (i === index ? { ...c, revised: value } : c)));
   };
 
   const handleSave = async () => {
@@ -107,7 +113,6 @@ const EditReportPage: React.FC = () => {
       const updates = clauses
         .filter((c) => c.revised && c.revised !== c.original)
         .map((c) => ({ id: c.id, revised: c.revised || '' }));
-
       await saveRevisedClauses(reportId, updates, editorContent);
       toast.success('수정 내용이 성공적으로 저장되었습니다.');
     } catch (err) {
@@ -122,13 +127,21 @@ const EditReportPage: React.FC = () => {
     if (!hiddenContentRef.current) return;
     setLoadingPdf(true);
     try {
-      const canvas = await html2canvas(hiddenContentRef.current, { scale: 2 });
+      await new Promise((r) => setTimeout(r, 100));
+
+      const canvas = await html2canvas(hiddenContentRef.current, {
+        scale: 2,
+        useCORS: true,
+      });
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const margin = 10;
+      const topBottomMargin = 10;
+      const pdfWidth = pdf.internal.pageSize.getWidth() - margin * 2;
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', margin, topBottomMargin, pdfWidth, pdfHeight);
       pdf.save('edited_report.pdf');
     } catch (err) {
       console.error(err);
@@ -156,14 +169,10 @@ const EditReportPage: React.FC = () => {
                   <div key={idx} className="border p-3 rounded bg-white shadow-sm">
                     <p className="text-sm font-semibold mb-1">원본 조항</p>
                     <p className="text-sm whitespace-pre-wrap">{clause.original}</p>
-                    {clause.risk && (
-                      <p className="mt-2 text-xs text-red-600">⚠ 위험 요소: {clause.risk}</p>
-                    )}
+                    {clause.risk && <p className="mt-2 text-xs text-red-600">⚠ 위험 요소: {clause.risk}</p>}
                     {clause.relatedCases?.length > 0 && (
                       <ul className="text-xs text-blue-600 mt-1 list-disc list-inside">
-                        {clause.relatedCases.map((c, i) => (
-                          <li key={i}>{c}</li>
-                        ))}
+                        {clause.relatedCases.map((c, i) => (<li key={i}>{c}</li>))}
                       </ul>
                     )}
                   </div>
@@ -180,28 +189,26 @@ const EditReportPage: React.FC = () => {
               <RichTextEditor
                 value={editorContent}
                 onChange={setEditorContent}
-                controls={[
-                  ['bold', 'italic', 'underline', 'strike', 'clean'],
-                  ['unorderedList', 'orderedList'],
-                  ['blockquote', 'code', 'link', 'image'],
-                  ['h1', 'h2', 'h3'],
-                ]}
+                controls={[[
+                  'bold', 'italic', 'underline', 'strike', 'clean'
+                ], [
+                  'unorderedList', 'orderedList'
+                ], [
+                  'blockquote', 'code', 'link', 'image'
+                ], [
+                  'h1', 'h2', 'h3'
+                ]]}
                 style={{ height: '70vh' }}
               />
             </div>
             <div className="flex justify-end space-x-3 mt-4 flex-shrink-0">
-              <button
-                onClick={handleSave}
-                className="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
+              <button onClick={handleSave} className="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                 💾 저장하기
               </button>
               <button
                 onClick={handleDownloadPdf}
                 disabled={loadingPdf}
-                className={`px-5 py-2 rounded text-white ${
-                  loadingPdf ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-                }`}
+                className={`px-5 py-2 rounded text-white ${loadingPdf ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
               >
                 {loadingPdf ? '다운로드 중...' : 'PDF 다운로드'}
               </button>
@@ -212,7 +219,7 @@ const EditReportPage: React.FC = () => {
       <div
         ref={hiddenContentRef}
         className="max-w-7xl mx-auto p-8 bg-white text-black"
-        style={{ position: 'fixed', top: -9999, left: -9999, width: '800px', zIndex: -1 }}
+        style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '800px', zIndex: -1, visibility: 'hidden' }}
         dangerouslySetInnerHTML={{ __html: editorContent }}
       />
     </>

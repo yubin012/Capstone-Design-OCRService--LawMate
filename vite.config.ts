@@ -26,4 +26,8 @@ export default defineConfig({
       { find: '@', replacement: path.resolve(__dirname, 'src') },
     ],
   },
+  server: {
+    // ✅ SPA 라우팅 대응 (404 방지)
+    historyApiFallback: true,
+  },
 });

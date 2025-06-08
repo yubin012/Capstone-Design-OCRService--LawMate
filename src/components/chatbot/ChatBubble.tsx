@@ -1,4 +1,3 @@
-// ✅ src/components/chatbot/ChatBubble.tsx (추천 버튼 박스형 UI 반영)
 import React, { useEffect, useState } from 'react';
 
 interface ChatBubbleProps {
@@ -19,7 +18,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   onSelectSuggestion,
 }) => {
   const isUser = sender === 'user';
-  const [typingText, setTypingText] = useState('');
+  const [typingText, setTypingText] = useState(text);
 
   useEffect(() => {
     if (text !== '__typing__') {
@@ -39,18 +38,16 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
 
   return (
     <div className={`mb-3 flex ${isUser ? 'justify-end' : 'justify-start'} items-end gap-1`}>
-      {isUser && (
+      {isUser ? (
         <>
-          <div className="text-xs text-gray-500 mb-1" aria-label="timestamp">
-            {timestamp}
-          </div>
           <div className="inline-block max-w-[75%] px-4 py-2 rounded-lg break-words shadow bg-blue-600 text-white rounded-br-none">
             <div>{typingText}</div>
           </div>
+          <div className="text-xs text-gray-500 mb-1 ml-1" aria-label="timestamp">
+            {timestamp}
+          </div>
         </>
-      )}
-
-      {!isUser && (
+      ) : (
         <>
           <div className="inline-block max-w-[75%] px-4 py-2 rounded-lg break-words shadow bg-gray-200 text-gray-800 rounded-bl-none">
             <div>{typingText}</div>
@@ -69,7 +66,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
               </div>
             )}
           </div>
-          <div className="text-xs text-gray-500 mb-1" aria-label="timestamp">
+          <div className="text-xs text-gray-500 mb-1 ml-1" aria-label="timestamp">
             {timestamp}
           </div>
         </>
