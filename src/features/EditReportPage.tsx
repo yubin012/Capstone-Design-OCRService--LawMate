@@ -1,4 +1,4 @@
-// ✅ EditReportPage.tsx (v2.3: PDF 여백 및 강제 DOM 렌더링 방식 수정)
+// ✅ EditReportPage.tsx (v2.4: PDF 페이지 분할 적용)
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnalyzedClause, getReportById, saveRevisedClauses } from '@/api/report';
@@ -128,17 +128,43 @@ const EditReportPage: React.FC = () => {
       tempDiv.style.position = 'fixed';
       tempDiv.style.top = '-9999px';
       tempDiv.style.left = '-9999px';
+      tempDiv.style.lineHeight = '1.6';
       document.body.appendChild(tempDiv);
 
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 300)); // 렌더링 대기
 
       const canvas = await html2canvas(tempDiv, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 10;
-      const pdfWidth = pdf.internal.pageSize.getWidth() - margin * 2;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth, pdfHeight);
+
+      const contentWidth = pageWidth - margin * 2;
+      const contentHeight = pageHeight - margin * 2;
+
+      const imgWidth = contentWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let position = 0;
+      let pageCount = Math.ceil(imgHeight / contentHeight);
+
+      for (let i = 0; i < pageCount; i++) {
+        const srcY = (i * canvas.height) / pageCount;
+        const srcHeight = canvas.height / pageCount;
+
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = srcHeight;
+
+        const ctx = pageCanvas.getContext('2d')!;
+        ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
+
+        const pageImgData = pageCanvas.toDataURL('image/png');
+        if (i > 0) pdf.addPage();
+        pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidth, contentHeight);
+      }
+
       pdf.save('edited_report.pdf');
       document.body.removeChild(tempDiv);
     } catch (err) {
@@ -187,12 +213,15 @@ const EditReportPage: React.FC = () => {
               <RichTextEditor
                 value={editorContent}
                 onChange={setEditorContent}
-                controls={[
-                  ['bold', 'italic', 'underline', 'strike', 'clean'],
-                  ['unorderedList', 'orderedList'],
-                  ['blockquote', 'code', 'link', 'image'],
-                  ['h1', 'h2', 'h3']
-                ]}
+                controls={[[
+                  'bold', 'italic', 'underline', 'strike', 'clean'
+                ], [
+                  'unorderedList', 'orderedList'
+                ], [
+                  'blockquote', 'code', 'link', 'image'
+                ], [
+                  'h1', 'h2', 'h3'
+                ]]}
                 style={{ height: '70vh' }}
               />
             </div>
