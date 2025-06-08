@@ -1,13 +1,13 @@
 const complaintTemplate = ({
-  고소인_성명,
-  피고소인_성명,
+  고소인,
+  피고소인,
   사건_내용,
   피해_정도,
   고소_이유,
   작성일,
 }: {
-  고소인_성명?: string;
-  피고소인_성명?: string;
+  고소인?: string;
+  피고소인?: string;
   사건_내용?: string;
   피해_정도?: string;
   고소_이유?: string;
@@ -17,14 +17,14 @@ const complaintTemplate = ({
   <br /><br />
 
   <p><strong>고소인</strong></p>
-  <p>성명: ${고소인_성명 ?? '_______'}</p>
+  <p>성명: ${고소인 ?? '_______'}</p>
   <p>주민등록번호: _______</p>
   <p>주소: _______</p>
   <p>전화번호: _______</p>
   <br /><br />
 
   <p><strong>피고소인</strong></p>
-  <p>성명: ${피고소인_성명 ?? '_______'}</p>
+  <p>성명: ${피고소인 ?? '_______'}</p>
   <p>주소: _______</p>
   <p>전화번호: _______</p>
   <br /><br />
@@ -107,7 +107,7 @@ const complaintTemplate = ({
   <p style="text-align:right;">${작성일 ?? '20___년 __월 __일'}</p>
   <br />
 
-  <p style="text-align:right;"><strong>위 고소인</strong><br/>${고소인_성명 ?? '_______'} (서명 또는 인)</p>
+  <p style="text-align:right;"><strong>위 고소인</strong><br/>${고소인 ?? '_______'} (서명 또는 인)</p>
   <br /><br />
 
   <p style="text-align:center;">OOO 경찰서 행정실 귀중</p>

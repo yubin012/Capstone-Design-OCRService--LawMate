@@ -33,7 +33,7 @@ const testamentTemplate = ({
 
   <br />
 
-  <p><strong>상속자</strong>: ${상속인?.join(', ') ?? '_______'}</p>
+  <p><strong>상속인</strong>: ${상속인?.join(', ') ?? '_______'}</p>
 
   <br />
 

@@ -1,4 +1,4 @@
-// ✅ EditReportPage.tsx (v2.4: PDF 페이지 분할 적용)
+// ✅ EditReportPage.tsx (v2.5: PDF 분할, 채워진 템플릿 렌더링, 저장/다운로드)
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnalyzedClause, getReportById, saveRevisedClauses } from '@/api/report';
@@ -40,6 +40,7 @@ const EditReportPage: React.FC = () => {
       try {
         showLoader();
         setLoading(true);
+
         if (shouldUseStateTemplate) {
           const filled = fillTemplateFromResponse({
             template: state.templateType!,
@@ -53,6 +54,7 @@ const EditReportPage: React.FC = () => {
             return;
           }
         }
+
         const result = await getReportById(id!);
         setClauses(result.clauses || []);
         setAnalysisText(result.analysisSummary || '분석 결과가 없습니다.');
@@ -62,19 +64,19 @@ const EditReportPage: React.FC = () => {
           const parsed = JSON.parse(decodeURIComponent(dataParam));
           const filled = fillTemplateFromResponse(parsed);
           setEditorContent(filled ?? getDefaultTemplate());
-        } else setEditorContent(getDefaultTemplate());
+        } else {
+          setEditorContent(getDefaultTemplate());
+        }
         setError('');
       } catch (err) {
         console.error(err);
-        setClauses([
-          {
-            id: 'demo-1',
-            original: '⚠️ 백엔드 연결 실패 - 예시 문장입니다.',
-            revised: '',
-            risk: '예시 위험',
-            relatedCases: ['사건 예시 1', '사건 예시 2'],
-          },
-        ]);
+        setClauses([{
+          id: 'demo-1',
+          original: '⚠️ 백엔드 연결 실패 - 예시 문장입니다.',
+          revised: '',
+          risk: '예시 위험',
+          relatedCases: ['사건 예시 1', '사건 예시 2'],
+        }]);
         setError('⚠️ 백엔드 연결 실패: 예시 문장을 표시합니다.');
         setAnalysisText('⚠️ 백엔드 연결 실패로 인해 분석 결과가 없습니다.');
         setEditorContent(getDefaultTemplate());
@@ -131,7 +133,7 @@ const EditReportPage: React.FC = () => {
       tempDiv.style.lineHeight = '1.6';
       document.body.appendChild(tempDiv);
 
-      await new Promise((r) => setTimeout(r, 300)); // 렌더링 대기
+      await new Promise((r) => setTimeout(r, 300));
 
       const canvas = await html2canvas(tempDiv, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
@@ -139,27 +141,22 @@ const EditReportPage: React.FC = () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 10;
-
       const contentWidth = pageWidth - margin * 2;
       const contentHeight = pageHeight - margin * 2;
 
       const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let position = 0;
       let pageCount = Math.ceil(imgHeight / contentHeight);
 
       for (let i = 0; i < pageCount; i++) {
         const srcY = (i * canvas.height) / pageCount;
         const srcHeight = canvas.height / pageCount;
-
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = canvas.width;
         pageCanvas.height = srcHeight;
 
         const ctx = pageCanvas.getContext('2d')!;
         ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
-
         const pageImgData = pageCanvas.toDataURL('image/png');
         if (i > 0) pdf.addPage();
         pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidth, contentHeight);
