@@ -1,3 +1,4 @@
+// templates/testament_temp.ts
 const testamentTemplate = ({
   유언자_성명,
   유언자_생년월일,
