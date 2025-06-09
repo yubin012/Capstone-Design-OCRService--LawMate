@@ -1,13 +1,13 @@
-// ✅ EditReportPage.tsx (v2.5: PDF 분할, 채워진 템플릿 렌더링, 저장/다운로드)
+// ✅ EditReportPage.tsx (v2.9: 로컬 저장된 content 지원 추가)
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AnalyzedClause, getReportById, saveRevisedClauses } from '@/api/report';
+import { AnalyzedClause, getReportById } from '@/api/report';
 import { useLoader } from '@/contexts/LoaderContext';
 import { toast } from 'react-toastify';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import html2pdf from 'html2pdf.js';
 import { RichTextEditor } from '@mantine/rte';
 import { fillTemplateFromResponse } from '@/utils/fillTemplate';
+import { saveLocalDoc } from '@/utils/localSavedDocs';
 
 const EditReportPage: React.FC = () => {
   const location = useLocation();
@@ -22,13 +22,24 @@ const EditReportPage: React.FC = () => {
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const state = location.state as { templateType?: string; variables?: Record<string, string> } | null;
+  const state = location.state as { templateType?: string; variables?: Record<string, string>; content?: string } | null;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        setEditorContent(prev => prev + '<div style="page-break-after: always;"></div>');
+        toast.info('📄 페이지 구분이 추가되었습니다.');
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
     const dataParam = params.get('data');
-    const shouldUseStateTemplate = !!state?.templateType && !!state?.variables;
+    const shouldUseStateTemplate = !!state?.templateType && (!!state?.variables || !!state?.content);
 
     if (!id && !shouldUseStateTemplate) {
       navigate('/upload');
@@ -41,10 +52,10 @@ const EditReportPage: React.FC = () => {
         showLoader();
         setLoading(true);
 
-        if (shouldUseStateTemplate) {
+        if (state?.templateType && state?.variables) {
           const filled = fillTemplateFromResponse({
-            template: state.templateType!,
-            variables: state.variables!,
+            template: state.templateType,
+            variables: state.variables,
           });
           if (filled) {
             setEditorContent(filled);
@@ -53,6 +64,14 @@ const EditReportPage: React.FC = () => {
             setError('');
             return;
           }
+        }
+
+        if (state?.content) {
+          setEditorContent(state.content);
+          setClauses([]);
+          setAnalysisText('');
+          setError('');
+          return;
         }
 
         const result = await getReportById(id!);
@@ -64,19 +83,11 @@ const EditReportPage: React.FC = () => {
           const parsed = JSON.parse(decodeURIComponent(dataParam));
           const filled = fillTemplateFromResponse(parsed);
           setEditorContent(filled ?? getDefaultTemplate());
-        } else {
-          setEditorContent(getDefaultTemplate());
-        }
+        } else setEditorContent(getDefaultTemplate());
         setError('');
       } catch (err) {
         console.error(err);
-        setClauses([{
-          id: 'demo-1',
-          original: '⚠️ 백엔드 연결 실패 - 예시 문장입니다.',
-          revised: '',
-          risk: '예시 위험',
-          relatedCases: ['사건 예시 1', '사건 예시 2'],
-        }]);
+        setClauses([{ id: 'demo-1', original: '⚠️ 백엔드 연결 실패 - 예시 문장입니다.', revised: '', risk: '예시 위험', relatedCases: ['사건 예시 1'] }]);
         setError('⚠️ 백엔드 연결 실패: 예시 문장을 표시합니다.');
         setAnalysisText('⚠️ 백엔드 연결 실패로 인해 분석 결과가 없습니다.');
         setEditorContent(getDefaultTemplate());
@@ -105,14 +116,19 @@ const EditReportPage: React.FC = () => {
   const handleSave = async () => {
     try {
       showLoader();
-      const updates = clauses
-        .filter((c) => c.revised && c.revised !== c.original)
-        .map((c) => ({ id: c.id, revised: c.revised || '' }));
-      await saveRevisedClauses(reportId, updates, editorContent);
-      toast.success('수정 내용이 성공적으로 저장되었습니다.');
+      if (state?.templateType) {
+        saveLocalDoc(
+          state.templateType,               // 템플릿 타입 (e.g., CONTENT_PROOF)
+          editorContent,                    // 에디터 내용 (HTML)
+          new Date().toISOString()          // 저장 시각
+        );
+        toast.success('📁 로컬에 문서가 저장되었습니다.');
+      } else {
+        toast.info('⚠️ 템플릿 정보가 없어 로컬 저장이 생략되었습니다.');
+      }
     } catch (err) {
-      console.error('❗ 저장 실패:', err);
-      toast.error('저장 중 오류가 발생했습니다.');
+      console.error('❗ 로컬 저장 실패:', err);
+      toast.error('로컬 저장 중 오류가 발생했습니다.');
     } finally {
       hideLoader();
     }
@@ -123,46 +139,20 @@ const EditReportPage: React.FC = () => {
     try {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = editorContent;
-      tempDiv.style.width = '800px';
-      tempDiv.style.padding = '30px';
-      tempDiv.style.backgroundColor = 'white';
-      tempDiv.style.color = 'black';
-      tempDiv.style.position = 'fixed';
-      tempDiv.style.top = '-9999px';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.lineHeight = '1.6';
+      Object.assign(tempDiv.style, {
+        width: '800px', padding: '30px', backgroundColor: 'white', color: 'black', fontSize: '12pt', fontFamily: '맑은 고딕, Malgun Gothic, sans-serif', lineHeight: '1.6'
+      });
       document.body.appendChild(tempDiv);
 
-      await new Promise((r) => setTimeout(r, 300));
+      await html2pdf().set({
+        margin: 1,
+        filename: 'edited_report.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+      }).from(tempDiv).save();
 
-      const canvas = await html2canvas(tempDiv, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const contentWidth = pageWidth - margin * 2;
-      const contentHeight = pageHeight - margin * 2;
-
-      const imgWidth = contentWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let pageCount = Math.ceil(imgHeight / contentHeight);
-
-      for (let i = 0; i < pageCount; i++) {
-        const srcY = (i * canvas.height) / pageCount;
-        const srcHeight = canvas.height / pageCount;
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = srcHeight;
-
-        const ctx = pageCanvas.getContext('2d')!;
-        ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
-        const pageImgData = pageCanvas.toDataURL('image/png');
-        if (i > 0) pdf.addPage();
-        pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidth, contentHeight);
-      }
-
-      pdf.save('edited_report.pdf');
       document.body.removeChild(tempDiv);
     } catch (err) {
       console.error(err);
@@ -173,71 +163,61 @@ const EditReportPage: React.FC = () => {
   };
 
   return (
-    <>
-      {loading ? (
-        <div className="fixed inset-0 flex items-center justify-center bg-white z-50" style={{ minHeight: '80vh' }}>
-          <p className="text-lg text-gray-700">로딩 중입니다... 잠시만 기다려주세요.</p>
-        </div>
-      ) : (
-        <div className="max-w-7xl mx-auto py-8 px-4 grid grid-cols-12 gap-8 min-h-[80vh]">
-          <div className="col-span-4 p-4 bg-blue-50 rounded shadow space-y-4 overflow-auto">
-            <h3 className="text-xl font-semibold mb-4">📝 분석 결과 및 주의사항</h3>
-            {error && <p className="text-red-500 mb-4">{error}</p>}
-            <div className="text-sm whitespace-pre-wrap">{analysisText}</div>
-            <div className="mt-6 space-y-4">
-              {clauses.length > 0 ? (
-                clauses.map((clause, idx) => (
-                  <div key={idx} className="border p-3 rounded bg-white shadow-sm">
-                    <p className="text-sm font-semibold mb-1">원본 조항</p>
-                    <p className="text-sm whitespace-pre-wrap">{clause.original}</p>
-                    {clause.risk && <p className="mt-2 text-xs text-red-600">⚠ 위험 요소: {clause.risk}</p>}
-                    {clause.relatedCases?.length > 0 && (
-                      <ul className="text-xs text-blue-600 mt-1 list-disc list-inside">
-                        {clause.relatedCases.map((c, i) => (<li key={i}>{c}</li>))}
-                      </ul>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 italic">현재 표시할 분석 조항이 없습니다.</p>
-              )}
-            </div>
+    <>{loading ? (
+      <div className="fixed inset-0 flex items-center justify-center bg-white z-50" style={{ minHeight: '80vh' }}>
+        <p className="text-lg text-gray-700">로딩 중입니다... 잠시만 기다려주세요.</p>
+      </div>
+    ) : (
+      <div className="max-w-7xl mx-auto py-8 px-4 grid grid-cols-12 gap-8 min-h-[80vh]">
+        <div className="col-span-4 p-4 bg-blue-50 rounded shadow space-y-4 overflow-auto">
+          <h3 className="text-xl font-semibold mb-4">📝 분석 결과 및 주의사항</h3>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <div className="text-sm whitespace-pre-wrap">{analysisText}</div>
+          <div className="mt-6 space-y-4">
+            {clauses.length > 0 ? clauses.map((clause, idx) => (
+              <div key={idx} className="border p-3 rounded bg-white shadow-sm">
+                <p className="text-sm font-semibold mb-1">원본 조항</p>
+                <p className="text-sm whitespace-pre-wrap">{clause.original}</p>
+                {clause.risk && <p className="mt-2 text-xs text-red-600">⚠ 위험 요소: {clause.risk}</p>}
+                {clause.relatedCases?.length > 0 && (
+                  <ul className="text-xs text-blue-600 mt-1 list-disc list-inside">
+                    {clause.relatedCases.map((c, i) => (<li key={i}>{c}</li>))}
+                  </ul>
+                )}
+              </div>
+            )) : (
+              <p className="text-gray-500 italic">현재 표시할 분석 조항이 없습니다.</p>
+            )}
           </div>
+        </div>
 
-          <div className="col-span-8 p-4 bg-white rounded shadow flex flex-col h-[calc(80vh-4rem)]">
-            <h3 className="text-xl font-semibold mb-4 flex-shrink-0">📄 문서 작성 및 수정</h3>
-            <div className="flex-grow overflow-auto">
-              <RichTextEditor
-                value={editorContent}
-                onChange={setEditorContent}
-                controls={[[
-                  'bold', 'italic', 'underline', 'strike', 'clean'
-                ], [
-                  'unorderedList', 'orderedList'
-                ], [
-                  'blockquote', 'code', 'link', 'image'
-                ], [
-                  'h1', 'h2', 'h3'
-                ]]}
-                style={{ height: '70vh' }}
-              />
-            </div>
-            <div className="flex justify-end space-x-3 mt-4 flex-shrink-0">
-              <button onClick={handleSave} className="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                💾 저장하기
-              </button>
-              <button
-                onClick={handleDownloadPdf}
-                disabled={loadingPdf}
-                className={`px-5 py-2 rounded text-white ${loadingPdf ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-              >
-                {loadingPdf ? '다운로드 중...' : 'PDF 다운로드'}
-              </button>
-            </div>
+        <div className="col-span-8 p-4 bg-white rounded shadow flex flex-col h-[calc(80vh-4rem)]">
+          <h3 className="text-xl font-semibold mb-4 flex-shrink-0">📄 문서 작성 및 수정</h3>
+          <div className="flex-grow overflow-auto">
+            <RichTextEditor
+              value={editorContent}
+              onChange={setEditorContent}
+              controls={[[
+                'bold', 'italic', 'underline', 'strike', 'clean'
+              ], [
+                'unorderedList', 'orderedList'
+              ], [
+                'blockquote', 'code', 'link', 'image'
+              ], [
+                'h1', 'h2', 'h3']]} style={{ height: '70vh' }}
+            />
+          </div>
+          <div className="flex justify-end space-x-3 mt-4 flex-shrink-0">
+            <button onClick={handleSave} className="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+              💾 저장하기
+            </button>
+            <button onClick={handleDownloadPdf} disabled={loadingPdf} className={`px-5 py-2 rounded text-white ${loadingPdf ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}>
+              {loadingPdf ? '다운로드 중...' : 'PDF 다운로드'}
+            </button>
           </div>
         </div>
-      )}
-    </>
+      </div>
+    )}</>
   );
 };
 

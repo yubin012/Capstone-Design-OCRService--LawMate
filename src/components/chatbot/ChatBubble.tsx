@@ -5,8 +5,9 @@ interface ChatBubbleProps {
   text: string;
   timestamp?: string;
   type?: 'text' | 'suggest';
-  options?: string[];
+  options?: (string | { label: string; savedAt: string })[];
   onSelectSuggestion?: (text: string) => void;
+  onDeleteSuggestion?: (savedAt: string) => void;
 }
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({
@@ -16,6 +17,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   type = 'text',
   options = [],
   onSelectSuggestion,
+  onDeleteSuggestion,
 }) => {
   const isUser = sender === 'user';
   const [typingText, setTypingText] = useState(text);
@@ -54,15 +56,31 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
 
             {type === 'suggest' && options.length > 0 && (
               <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {options.map((opt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => onSelectSuggestion?.(opt)}
-                    className="text-sm text-left bg-white border border-blue-200 hover:bg-blue-50 px-3 py-2 rounded shadow-sm"
-                  >
-                    {opt}
-                  </button>
-                ))}
+                {options.map((opt, idx) => {
+                  const isObj = typeof opt === 'object';
+                  const label = isObj ? opt.label : opt;
+                  const savedAt = isObj ? opt.savedAt : null;
+
+                  return (
+                    <div key={idx} className="flex items-center space-x-2">
+                      <button
+                        onClick={() => onSelectSuggestion?.(label)}
+                        className="flex-grow text-sm text-left bg-white border border-blue-200 hover:bg-blue-50 px-3 py-2 rounded shadow-sm"
+                      >
+                        {label}
+                      </button>
+                      {savedAt && (
+                        <button
+                          onClick={() => onDeleteSuggestion?.(savedAt)}
+                          className="text-xs text-red-500 hover:text-red-700"
+                          title="삭제"
+                        >
+                          ❌
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

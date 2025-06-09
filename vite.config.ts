@@ -27,7 +27,13 @@ export default defineConfig({
     ],
   },
   server: {
-    // ✅ SPA 라우팅 대응 (404 방지)
-    historyApiFallback: true,
+    historyApiFallback: true,  // ✅ SPA 라우팅 대응
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',  // ✅ 실제 백엔드 서버 주소로 설정
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
 });
