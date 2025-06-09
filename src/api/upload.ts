@@ -1,13 +1,12 @@
-// src/api/upload.ts
 import axios from 'axios';
 
 export interface UploadHistoryItem {
-  id: string; // ✅ number → string (URL에 쓰이므로 보통 string이 안전)
+  id: string; // 파일 ID (string 타입이 URL에 안전)
   filename: string;
   uploadedAt: string;
 }
 
-// ✅ 공통 헤더 함수
+// ✅ 공통 헤더
 const headers = () => ({
   Authorization: `Bearer ${localStorage.getItem('token')}`,
 });
@@ -20,26 +19,28 @@ export const getUploadHistory = async (): Promise<UploadHistoryItem[]> => {
   return res.data;
 };
 
-// 📤 문서 업로드 요청 (예비용)
-export const uploadDocument = async (file: File) => {
+// 📤 파일 업로드 (파일을 백엔드에 전송하고 fileId 반환)
+export const uploadFile = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await axios.post('/api/analyze', formData, {
+  const res = await axios.post('/api/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
       ...headers(),
     },
   });
 
-  return res.data;
+  // ✅ fileId 포함한 응답 구조 가정
+  const { fileId } = res.data;
+  return fileId;
 };
 
-// 📁 신규: 업로드된 원본 파일 다운로드
+// 📁 업로드된 원본 파일 다운로드
 export const downloadOriginalFile = async (uploadId: string): Promise<Blob> => {
   const res = await axios.get(`/api/uploads/${uploadId}/download`, {
     headers: headers(),
-    responseType: 'blob', // ✅ 파일 다운로드를 위해 Blob 타입 사용
+    responseType: 'blob', // ✅ 다운로드용
   });
   return res.data;
 };

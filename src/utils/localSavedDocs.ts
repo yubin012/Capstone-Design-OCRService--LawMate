@@ -1,22 +1,34 @@
-// src/utils/localSavedDocs.ts
+import { AnalyzedClause } from '@/types/report_AI'; // ✅ 위험 조항 타입 import
 
 export interface LocalSavedDoc {
   id: string;
   templateType: string;
   content: string;
   savedAt: string;
+  name: string;                         // 문서 제목
+  analysisSummary?: string;            // ✅ AI 분석 요약 (선택적)
+  clauses?: AnalyzedClause[];          // ✅ 위험 조항 리스트 (선택적)
 }
 
 const LOCAL_STORAGE_KEY = 'localSavedReports';
 
 // ✅ 문서 저장
-export const saveLocalDoc = (templateType: string, content: string): void => {
+export const saveLocalDoc = (
+  templateType: string,
+  content: string,
+  name: string = '업로드한 문서',
+  analysisSummary?: string,
+  clauses?: AnalyzedClause[]
+): void => {
   const existing = loadLocalReports();
   const newEntry: LocalSavedDoc = {
     id: `doc-${Date.now()}`,
     templateType,
     content,
     savedAt: new Date().toISOString(),
+    name,
+    analysisSummary, // ✅ AI 분석 요약 저장
+    clauses,         // ✅ 위험 조항 리스트 저장
   };
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([...existing, newEntry]));
 };
@@ -44,7 +56,7 @@ export const deleteLocalDoc = (savedAt: string): void => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
 };
 
-// ✅ 문서 삭제 (ID 기준, 선택적 사용)
+// ✅ 문서 삭제 (ID 기준)
 export const deleteLocalDocById = (id: string): void => {
   const filtered = loadLocalReports().filter((doc) => doc.id !== id);
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
