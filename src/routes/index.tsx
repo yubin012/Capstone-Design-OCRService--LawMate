@@ -1,6 +1,6 @@
 // src/routes/index.tsx
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import BaseLayout from '@components/common/BaseLayout';
 import MainPage from '@features/MainPage';
@@ -16,13 +16,7 @@ import UserInfoPage from '@features/UserInfoPage';
 
 import { IS_PROTECTED_MODE } from '@/routes/config';
 import { isAuthenticated } from '@/utils/auth';
-
-/** 보호된 라우트 */
-const PrivateRoute = ({ children }: { children: JSX.Element }) => {
-  const isLoggedIn = isAuthenticated();
-  if (!IS_PROTECTED_MODE) return children;
-  return isLoggedIn ? children : <Navigate to="/login" replace />;
-};
+import PrivateRoute from './PrivateRoute'; // ✅ 외부 정의된 PrivateRoute 사용
 
 const Router = () => (
   <BrowserRouter>
@@ -47,3 +41,4 @@ const Router = () => (
 );
 
 export default Router;
+

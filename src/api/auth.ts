@@ -1,4 +1,7 @@
+// src/api/auth.ts
+
 import axios from 'axios';
+import { getToken } from '@/utils/auth'; // 토큰은 utils에서 import
 
 axios.defaults.baseURL = import.meta.env.VITE_API_URL;
 axios.defaults.headers.common['Content-Type'] = 'application/json';
@@ -14,12 +17,7 @@ export const signupWithEmailVerification = async (data: SignupData): Promise<voi
   await axios.post('/auth/signup', data);
 };
 
-// ✅ accessToken 반환 함수 (fallback 제거)
-export const getToken = (): string | null => {
-  return localStorage.getItem('token');
-};
-
-// ✅ JWT 인증 헤더 생성 함수 (명확한 예외 처리 포함)
+// ✅ JWT 인증 헤더 생성 함수
 export const getAuthHeaders = () => {
   const token = getToken();
   if (!token) {
