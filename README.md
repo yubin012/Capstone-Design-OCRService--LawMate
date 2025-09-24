@@ -7,8 +7,6 @@ OCR 기반 법률 문서 분석 및 AI 기반 상담 자동화 플랫폼
 OCR 기술을 활용해 문서 내용을 자동으로 분석하고  
 잠재적인 법적 리스크를 AI가 진단 및 가이드해주는 **AI 법률 어시스턴트**입니다.  
 
-<img width="893" height="517" alt="image" src="https://github.com/user-attachments/assets/8106d9aa-1d0a-4252-b165-376e1ac60773" />
-
 ---
 
 ## 🚀 주요 기능
