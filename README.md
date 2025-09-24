@@ -57,9 +57,15 @@ AI와 OCR을 통해 **쉽고 저렴하게 법률 문서를 작성·검토·상�
 
 ## ✅ 테스트 결과
 - Swagger & Postman 기반 API 테스트 완료
-- 주요 기능(문서 OCR, 챗봇, PDF 출력) 시연 검증
-
+<img width="940" height="951" alt="image" src="https://github.com/user-attachments/assets/c753693b-08e6-4d57-9854-80cce5c257db" />
 <img width="940" height="517" alt="image" src="https://github.com/user-attachments/assets/f0e86489-d88d-4f33-b662-03153a2021ce" />
+
+- 주요 기능(문서 OCR, 챗봇, PDF 출력) 시연 검증
+<img width="901" height="390" alt="image" src="https://github.com/user-attachments/assets/f5eb6687-d44e-41ca-9985-ee5cd9658624" />
+<img width="558" height="566" alt="image" src="https://github.com/user-attachments/assets/e1d93ecd-ef2d-4f72-99df-5ff0b12277df" />
+<img width="940" height="795" alt="image" src="https://github.com/user-attachments/assets/6315560f-97ba-4fe3-9dac-ae1eea3b2b13" />
+<img width="919" height="619" alt="image" src="https://github.com/user-attachments/assets/97f0de93-b66f-466d-b16c-8b7c25cb2ccc" />
+
 
 ---
 
