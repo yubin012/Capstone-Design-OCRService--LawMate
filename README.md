@@ -40,7 +40,7 @@ OCR 기술을 활용해 문서 내용을 자동으로 분석하고
 
 - **Frontend**: React, TypeScript, TailwindCSS  
 - **Backend**: Spring Boot, Java, REST API, JWT 인증  
-- **OCR 엔진**: Tesseract OCR + 커스텀 Preprocessing  
+- **OCR 엔진**: Tesseract OCR + 커스텀 Preprocessing (Google Vision API)
 - **AI 분석**: OpenAI API 기반 NLP, KoBERT, KoAlpaca-PolyGlot  
 - **Database**: MySQL  
 - **Deployment**: Docker, AWS EC2, RDS
@@ -56,6 +56,18 @@ OCR 기술을 활용해 문서 내용을 자동으로 분석하고
 <img width="1163" height="1067" alt="image" src="https://github.com/user-attachments/assets/032dcfce-d30e-4d41-8ccd-7fbba80ef99d" />
 
 ---
+## 테스트 결과
+- Swagger/Postman API 테스트 완료
+ <img width="940" height="951" alt="image" src="https://github.com/user-attachments/assets/c753693b-08e6-4d57-9854-80cce5c257db" />
+ <img width="940" height="517" alt="image" src="https://github.com/user-attachments/assets/f0e86489-d88d-4f33-b662-03153a2021ce" />
+---
+## 📁 모노레포 구조
+lawmate/
+├─ lawmate-front/ # React + TS 프론트엔드
+├─ lawmate-back/ # Spring Boot 백엔드 (JWT, DB, 템플릿/문서 자동화)
+├─ lawmate-ai/ # FastAPI AI 서버 (OCR/NLP/프롬프트/판례검색)
+├─ deploy/ # docker-compose, Nginx, 샘플 env
+└─ docs/ # ERD, 아키텍처, API 스펙, 스크린샷
 
 ## 📦 설치 및 실행 방법
 
