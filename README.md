@@ -62,25 +62,55 @@ OCR 기술을 활용해 문서 내용을 자동으로 분석하고
  <img width="940" height="517" alt="image" src="https://github.com/user-attachments/assets/f0e86489-d88d-4f33-b662-03153a2021ce" />
 ---
 ## 📁 모노레포 구조
-```lawmate/
+```bash
+lawmate/
 ├─ lawmate-front/ # React + TS 프론트엔드
 ├─ lawmate-back/ # Spring Boot 백엔드 (JWT, DB, 템플릿/문서 자동화)
 ├─ lawmate-ai/ # FastAPI AI 서버 (OCR/NLP/프롬프트/판례검색)
 ├─ deploy/ # docker-compose, Nginx, 샘플 env
-└─ docs/ # ERD, 아키텍처, API 스펙, 스크린샷```
+└─ docs/ # ERD, 아키텍처, API 스펙, 스크린샷
 
-## 📦 설치 및 실행 방법
+## 📚 모델 & 데이터
 
-```bash
-# 클론
-git clone https://github.com/your-id/lawmate.git
-cd lawmate
+- **KLUE-BERT 조항 분류**: F1 0.98+ (유리/불리)  
+- **KoSBERT + FAISS**: 판결요지 임베딩 → 상위 k 유사 판례  
+- **KoAlpaca-PolyGlot + LoRA**: 리스크 진단/수정 가이드 자연어 생성  
 
-# 백엔드 실행
-cd lawmate-back
-./gradlew bootRun
+> 데이터셋/인덱스/체크포인트 경로는 `lawmate-ai/config.yaml` 혹은 `.env`에서 관리  
+> 처음 구동 시 AI 서버가 **판례 인덱스 자동 생성(캐시)** → 1회성 시간이 걸릴 수 있습니다.  
 
-# 프론트엔드 실행
-cd ../lawmate-front
-npm install
-npm start
+---
+
+## 🔒 보안 & 개인정보
+
+- 업로드 문서는 **일시 저장 후 처리 완료 시 익명화/삭제** (환경설정 가능)  
+- **JWT 기반 인증/인가**, 민감 데이터는 **암호화 저장 권장**  
+- ⚠️ **법률 자문 대체 아님**: 결과는 참고용이며, 최종 판단/책임은 사용자에게 있습니다.  
+
+---
+
+## 🧯 트러블슈팅
+
+### OCR 인식 저조
+- 스캔 화질 개선  
+- 300dpi 이상 권장  
+- 흑백/왜곡 보정 옵션 on  
+
+### AI 서버 응답 지연
+- `USE_GOOGLE_VISION=false` 로컬 우선  
+- 임베딩/인덱스 캐시 확인  
+
+### CORS 에러
+- 백엔드 `CorsConfig` 혹은  
+- 프론트 `REACT_APP_API_BASE` 재확인  
+
+### PDF 저장 품질
+- 프론트 `html2canvas` 옵션에서  
+- `scale` / `letterRendering` 값 조정  
+
+
+> 본 프로젝트는 캡스톤디자인 과제로 개발되었으며, 교육적 목적의 프로토타입입니다.
+
+## ⚠️ 주의사항
+LawMate는 법률 자문을 대체하지 않으며, 제공되는 분석 결과는 참고용입니다.  
+최종 판단과 책임은 사용자에게 있습니다.
