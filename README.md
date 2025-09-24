@@ -62,12 +62,12 @@ OCR 기술을 활용해 문서 내용을 자동으로 분석하고
  <img width="940" height="517" alt="image" src="https://github.com/user-attachments/assets/f0e86489-d88d-4f33-b662-03153a2021ce" />
 ---
 ## 📁 모노레포 구조
-lawmate/
+```lawmate/
 ├─ lawmate-front/ # React + TS 프론트엔드
 ├─ lawmate-back/ # Spring Boot 백엔드 (JWT, DB, 템플릿/문서 자동화)
 ├─ lawmate-ai/ # FastAPI AI 서버 (OCR/NLP/프롬프트/판례검색)
 ├─ deploy/ # docker-compose, Nginx, 샘플 env
-└─ docs/ # ERD, 아키텍처, API 스펙, 스크린샷
+└─ docs/ # ERD, 아키텍처, API 스펙, 스크린샷```
 
 ## 📦 설치 및 실행 방법
 
